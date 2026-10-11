@@ -1,5 +1,5 @@
 # Environment variables
-.env
+#.env # celowo udostępniam to w repozytorium ze względu na wymogi zadania
 
 # Node & Backend
 node_modules/
