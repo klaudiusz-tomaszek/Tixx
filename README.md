@@ -19,6 +19,18 @@ Głównym celem projektu jest stworzenie prostego i funkcjonalnego systemu typu 
 
 - **Baza danych:** PostgreSQL
 - **Panel zarządzania bazą:** Adminer (webowy interfejs do podglądu i zarządzania tabelami)
+- **Aplikacja webowa (Backend & Frontend):** Node.js + Express
 - **Konteneryzacja:** Docker & Docker Compose
 
 ---
+
+## 🚀 Uruchomienie projektu
+
+1. Uruchomienie wszystkich serwisów za pomocą Docker Compose:
+   ```bash
+   docker compose up -d
+   ```
+
+2. Dostęp do usług w przeglądarce:
+   - **Aplikacja Webowa:** [http://localhost:3000](http://localhost:3000)
+   - **Adminer (baza danych):** [http://localhost:8080](http://localhost:8080)

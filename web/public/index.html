@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Service Desk - Hello World</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #22c55e;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 680px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .services-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .service-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .service-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .service-icon {
+      font-size: 1.5rem;
+    }
+
+    .service-name {
+      font-weight: 600;
+    }
+
+    .service-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .service-tag {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: var(--border);
+      color: var(--primary);
+      font-family: monospace;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    .api-output {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      background: #090d16;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      display: none;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      Kontenery Docker uruchomione
+    </div>
+    <h1>Hello World! 👋</h1>
+    <p class="subtitle">
+      Aplikacja <strong>IT Service Desk</strong> w Node.js działa pomyślnie w kontenerze Docker!
+    </p>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-info">
+          <span class="service-icon">🌐</span>
+          <div>
+            <div class="service-name">Aplikacja Webowa</div>
+            <div class="service-desc">Node.js + Express</div>
+          </div>
+        </div>
+        <span class="service-tag">port: 3000</span>
+      </div>
+
+      <div class="service-card">
+        <div class="service-info">
+          <span class="service-icon">🗄️</span>
+          <div>
+            <div class="service-name">Baza danych</div>
+            <div class="service-desc">PostgreSQL 18.6</div>
+          </div>
+        </div>
+        <span class="service-tag">port: 5432</span>
+      </div>
+
+      <div class="service-card">
+        <div class="service-info">
+          <span class="service-icon">🛠️</span>
+          <div>
+            <div class="service-name">Zarządzanie bazą</div>
+            <div class="service-desc">Adminer Web GUI</div>
+          </div>
+        </div>
+        <span class="service-tag">port: 8080</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="http://localhost:8080" target="_blank" class="btn btn-secondary">
+        Otwórz Adminer (8080) ↗
+      </a>
+      <button class="btn btn-primary" onclick="checkHealth()">
+        Sprawdź API (/api/health)
+      </button>
+    </div>
+
+    <pre id="output" class="api-output"></pre>
+  </div>
+
+  <script>
+    async function checkHealth() {
+      const output = document.getElementById('output');
+      output.style.display = 'block';
+      output.textContent = 'Sprawdzanie stanu...';
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.textContent = 'Błąd pobierania danych: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
+
