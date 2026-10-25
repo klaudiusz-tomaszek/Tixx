@@ -1,258 +1,278 @@
-<!DOCTYPE html>
-<html lang="pl">
+<!doctype html>
+<html lang="pl" data-bs-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Tixx - System Obsługi Zgłoszeń</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --primary-hover: #0284c7;
-      --success: #22c55e;
-      --border: #334155;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
-    }
-
-    .container {
-      max-width: 680px;
-      width: 100%;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: rgba(34, 197, 94, 0.15);
-      color: var(--success);
-      padding: 0.35rem 0.85rem;
-      border-radius: 9999px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 1.25rem;
-    }
-
-    .badge-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--success);
-      box-shadow: 0 0 8px var(--success);
-    }
-
-    h1 {
-      font-size: 2.25rem;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 0.75rem;
-    }
-
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-      line-height: 1.5;
-    }
-
-    .services-grid {
-      display: grid;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .service-card {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .service-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .service-icon {
-      font-size: 1.5rem;
-    }
-
-    .service-name {
-      font-weight: 600;
-    }
-
-    .service-desc {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .service-tag {
-      font-size: 0.8rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-      background: var(--border);
-      color: var(--primary);
-      font-family: monospace;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 0.75rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: background 0.2s, transform 0.1s;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-primary {
-      background-color: var(--primary);
-      color: #0f172a;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
-
-    .btn-secondary {
-      background-color: #334155;
-      color: var(--text-main);
-    }
-
-    .btn-secondary:hover {
-      background-color: #475569;
-    }
-
-    .api-output {
-      margin-top: 1.25rem;
-      padding: 1rem;
-      background: #090d16;
-      border-radius: 8px;
-      border: 1px solid #1e293b;
-      font-family: monospace;
-      font-size: 0.85rem;
-      color: #38bdf8;
-      display: none;
-      word-break: break-all;
-    }
-  </style>
+  
+  <!-- Tabler CSS & Tabler Icons via CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 </head>
 <body>
-  <div class="container">
-    <div class="badge">
-      <span class="badge-dot"></span>
-      Kontenery Docker uruchomione
-    </div>
-    <h1>Hello World! 👋</h1>
-    <p class="subtitle">
-      Aplikacja <strong>Tixx</strong> w Node.js działa pomyślnie w kontenerze Docker!
-    </p>
+  <div class="page">
+    <!-- Górny pasek nawigacji -->
+    <header class="navbar navbar-expand-md d-print-none border-bottom">
+      <div class="container-xl">
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <span class="text-primary me-2"><i class="ti ti-ticket fs-2"></i></span>
+          <span class="fw-bold tracking-tight">Tixx</span>
+          <span class="badge bg-primary-subtle text-primary ms-2">Service Desk</span>
+        </h1>
+        <div class="navbar-nav flex-row order-md-last align-items-center gap-2">
+          <button class="btn btn-icon btn-ghost-secondary rounded-circle" id="theme-toggle" onclick="toggleTheme()" title="Przełącz motyw">
+            <i class="ti ti-sun fs-2" id="theme-icon"></i>
+          </button>
+          <a href="http://localhost:8080" target="_blank" class="btn btn-outline-secondary d-none d-sm-inline-flex align-items-center gap-2">
+            <i class="ti ti-database"></i> Adminer
+          </a>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-2" onclick="checkHealth()">
+            <i class="ti ti-activity"></i> Stan API
+          </button>
+        </div>
+      </div>
+    </header>
 
-    <div class="services-grid">
-      <div class="service-card">
-        <div class="service-info">
-          <span class="service-icon">🌐</span>
-          <div>
-            <div class="service-name">Aplikacja Webowa</div>
-            <div class="service-desc">Node.js + Express</div>
+    <!-- Główna zawartość -->
+    <div class="page-wrapper">
+      <!-- Nagłówek strony -->
+      <div class="page-header d-print-none">
+        <div class="container-xl">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <div class="page-pretitle text-secondary">
+                Panel zarządzania infrastrukturą i zgłoszeniami
+              </div>
+              <h2 class="page-title d-flex align-items-center gap-2">
+                Stan Środowiska Tixx
+                <span class="badge bg-green text-green-fg badge-pill">
+                  <span class="badge-dot badge-dot-blink bg-green-fg me-1"></span> Kontenery Aktywne
+                </span>
+              </h2>
+            </div>
           </div>
         </div>
-        <span class="service-tag">port: 3000</span>
       </div>
 
-      <div class="service-card">
-        <div class="service-info">
-          <span class="service-icon">🗄️</span>
-          <div>
-            <div class="service-name">Baza danych</div>
-            <div class="service-desc">PostgreSQL 18.6</div>
+      <!-- Treść strony -->
+      <div class="page-body">
+        <div class="container-xl">
+          <!-- Kafelki metryk / usług -->
+          <div class="row row-cards mb-4">
+            <div class="col-sm-6 col-lg-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-primary text-white avatar">
+                        <i class="ti ti-server-2 fs-2"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Aplikacja Webowa</div>
+                      <div class="text-secondary">Node.js + Express (port 3000)</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="badge bg-green-lt">Online</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-azure text-white avatar">
+                        <i class="ti ti-database fs-2"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Baza Danych</div>
+                      <div class="text-secondary">PostgreSQL 18.6 (port 5432)</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="badge bg-green-lt">Działa</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-teal text-white avatar">
+                        <i class="ti ti-tool fs-2"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Zarządzanie Bazą</div>
+                      <div class="text-secondary">Adminer GUI (port 8080)</div>
+                    </div>
+                    <div class="col-auto">
+                      <a href="http://localhost:8080" target="_blank" class="badge bg-teal-lt text-decoration-none">
+                        Otwórz ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Karta z podglądem stanu API i diagnostyką -->
+          <div class="row row-cards">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title">
+                    <i class="ti ti-heartbeat text-danger me-2"></i> Diagnostyka API (/api/health)
+                  </h3>
+                  <button class="btn btn-sm btn-outline-primary" onclick="checkHealth()">
+                    <i class="ti ti-refresh me-1"></i> Odśwież
+                  </button>
+                </div>
+                <div class="card-body">
+                  <p class="text-secondary mb-3">
+                    Kliknij przycisk, aby zweryfikować połączenie z wewnętrznym API serwera Express.
+                  </p>
+                  
+                  <div id="health-card" class="d-none">
+                    <div class="row g-3" id="health-details">
+                      <!-- Wypełniane dynamicznie przez JS -->
+                    </div>
+                  </div>
+
+                  <div id="loading-spinner" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="text-secondary mt-2">Odpytywanie endpointu /api/health...</div>
+                  </div>
+
+                  <div id="raw-json-container" class="mt-3 d-none">
+                    <label class="form-label text-secondary fs-5">Odpowiedź JSON:</label>
+                    <pre id="output" class="bg-dark text-light p-3 rounded border border-secondary-subtle" style="font-family: monospace; font-size: 0.85rem;"></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Stopka -->
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+          <div class="row text-center align-items-center flex-row-reverse">
+            <div class="col-lg-auto ms-lg-auto">
+              <ul class="list-inline list-inline-dots mb-0">
+                <li class="list-inline-item">
+                  <a href="https://tabler.io" target="_blank" class="link-secondary" rel="noopener">Tabler UI</a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+              <ul class="list-inline list-inline-dots mb-0">
+                <li class="list-inline-item">
+                  Tixx &copy; 2026 - Projekt Semestralny
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <span class="service-tag">port: 5432</span>
-      </div>
-
-      <div class="service-card">
-        <div class="service-info">
-          <span class="service-icon">🛠️</span>
-          <div>
-            <div class="service-name">Zarządzanie bazą</div>
-            <div class="service-desc">Adminer Web GUI</div>
-          </div>
-        </div>
-        <span class="service-tag">port: 8080</span>
-      </div>
+      </footer>
     </div>
-
-    <div class="actions">
-      <a href="http://localhost:8080" target="_blank" class="btn btn-secondary">
-        Otwórz Adminer (8080) ↗
-      </a>
-      <button class="btn btn-primary" onclick="checkHealth()">
-        Sprawdź API (/api/health)
-      </button>
-    </div>
-
-    <pre id="output" class="api-output"></pre>
   </div>
 
+  <!-- Tabler Core JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
+
   <script>
+    // Obsługa motywu (Dark / Light)
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-bs-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-bs-theme', next);
+      
+      const icon = document.getElementById('theme-icon');
+      if (next === 'dark') {
+        icon.className = 'ti ti-sun fs-2';
+      } else {
+        icon.className = 'ti ti-moon fs-2';
+      }
+    }
+
+    // Odpytywanie endpointu API
     async function checkHealth() {
+      const loading = document.getElementById('loading-spinner');
+      const healthCard = document.getElementById('health-card');
+      const rawContainer = document.getElementById('raw-json-container');
       const output = document.getElementById('output');
-      output.style.display = 'block';
-      output.textContent = 'Sprawdzanie stanu...';
+      const healthDetails = document.getElementById('health-details');
+
+      loading.classList.remove('d-none');
+      healthCard.classList.add('d-none');
+      rawContainer.classList.add('d-none');
+
       try {
         const res = await fetch('/api/health');
         const data = await res.json();
+
+        // Renderowanie czytelnych kafelków ze statusem
+        healthDetails.innerHTML = `
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-body-tertiary rounded border">
+              <div class="text-secondary small">Status</div>
+              <div class="fs-3 fw-bold text-success">${data.status.toUpperCase()}</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-body-tertiary rounded border">
+              <div class="text-secondary small">Uptime serwera</div>
+              <div class="fs-3 fw-bold">${Math.round(data.uptime)} s</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-body-tertiary rounded border">
+              <div class="text-secondary small">Czas serwera</div>
+              <div class="fs-4 fw-bold">${data.serverTime || '-'}</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-body-tertiary rounded border">
+              <div class="text-secondary small">Strefa czasowa</div>
+              <div class="fs-4 fw-bold">${data.timezone || 'UTC'}</div>
+            </div>
+          </div>
+        `;
+
+        healthCard.classList.remove('d-none');
         output.textContent = JSON.stringify(data, null, 2);
+        rawContainer.classList.remove('d-none');
       } catch (err) {
-        output.textContent = 'Błąd pobierania danych: ' + err.message;
+        healthDetails.innerHTML = `
+          <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+              <i class="ti ti-alert-triangle me-2"></i> Błąd pobierania danych z API: ${err.message}
+            </div>
+          </div>
+        `;
+        healthCard.classList.remove('d-none');
+      } finally {
+        loading.classList.add('d-none');
       }
     }
+
+    // Automatyczne sprawdzenie health check przy załadowaniu strony
+    document.addEventListener('DOMContentLoaded', () => {
+      checkHealth();
+    });
   </script>
 </body>
 </html>
-

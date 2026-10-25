@@ -42,11 +42,17 @@ services:
     working_dir: /app
     volumes:
       - ./web:/app
+      - ./innit/web/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       PORT: 3000
       NODE_ENV: development
       TZ: ${TZ:-Europe/Warsaw}
-    command: sh -c "npm install && node server.js"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-tixx}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
