@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - ticket_net
+      - tixx_network
 
   adminer:
     image: adminer:latest
@@ -32,7 +32,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ticket_net
+      - tixx_network
 
   web:
     image: node:20-alpine
@@ -51,8 +51,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ticket_net
+      - tixx_network
 
 networks:
-  ticket_net:
-    name: tixx_network
+  tixx_network:
