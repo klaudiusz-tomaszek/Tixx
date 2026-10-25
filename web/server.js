@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'IT Service Desk Web API działa poprawnie',
+    message: 'Tixx Web API działa poprawnie',
     uptime: process.uptime(),
     timezone: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone,
     serverTime: new Date().toLocaleString('pl-PL'),
@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Serwer IT Service Desk uruchomiony na porcie ${PORT}`);
+  console.log(`Serwer Tixx uruchomiony na porcie ${PORT}`);
   console.log(`Dostępny pod adresem: http://localhost:${PORT}`);
 });
 

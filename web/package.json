@@ -1,7 +1,7 @@
 {
-  "name": "it-service-desk-web",
+  "name": "tixx-web",
   "version": "1.0.0",
-  "description": "IT Service Desk Web Application",
+  "description": "Tixx - IT Service Desk Web Application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,12 +1,12 @@
-# IT Service Desk – Portal do Obsługi Zgłoszeń IT
+# Tixx – Portal do Obsługi Zgłoszeń IT
 
-Projekt semestralny realizujący podstawowy portal do rejestracji, monitorowania oraz zarządzania zgłoszeniami serwisowymi IT (system ticketowy).
+Projekt semestralny realizujący podstawowy portal do rejestracji, monitorowania oraz zarządzania zgłoszeniami serwisowymi IT (system ticketowy) – **Tixx**.
 
 ---
 
 ## 🎯 Cel projektu
 
-Głównym celem projektu jest stworzenie prostego i funkcjonalnego systemu typu Helpdesk/Service Desk, który umożliwia:
+Głównym celem projektu **Tixx** jest stworzenie prostego i funkcjonalnego systemu typu Helpdesk / Service Desk, który umożliwia:
 - Rejestrowanie nowych zgłoszeń serwisowych przez użytkowników (np. problem ze sprzętem, dostępem, oprogramowaniem).
 - Nadawanie zgłoszeniom priorytetów (niski, średni, wysoki, krytyczny) oraz kategorii.
 - Śledzenie statusów zgłoszeń (np. *Nowe*, *W trakcie realizacji*, *Rozwiązane*, *Zamknięte*).
@@ -33,4 +33,4 @@ Głównym celem projektu jest stworzenie prostego i funkcjonalnego systemu typu 
 
 2. Dostęp do usług w przeglądarce:
    - **Aplikacja Webowa:** [http://localhost:3000](http://localhost:3000)
-   - **Adminer (baza danych):** [http://localhost:8080](http://localhost:8080)
+   - **Adminer (baza danych):** [http://localhost:8080](http://localhost:8080)
