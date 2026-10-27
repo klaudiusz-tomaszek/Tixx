@@ -1,76 +1,193 @@
 <!doctype html>
-<html lang="pl" data-bs-theme="dark">
+<html lang="pl" data-bs-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Tixx - System Obsługi Zgłoszeń</title>
-  
-  <!-- Tabler CSS & Tabler Icons via CDN -->
+
+  <!-- Tabler CSS & Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+
+  <!-- Własne style -->
+  <link rel="stylesheet" href="/css/app.css">
 </head>
+
 <body>
   <div class="page">
-    <!-- Górny pasek nawigacji -->
-    <header class="navbar navbar-expand-md d-print-none border-bottom">
-      <div class="container-xl">
-        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-          <span class="text-primary me-2"><i class="ti ti-ticket fs-2"></i></span>
-          <span class="fw-bold tracking-tight">Tixx</span>
-          <span class="badge bg-primary-subtle text-primary ms-2">Service Desk</span>
-        </h1>
-        <div class="navbar-nav flex-row order-md-last align-items-center gap-2">
-          <button class="btn btn-icon btn-ghost-secondary rounded-circle" id="theme-toggle" onclick="toggleTheme()" title="Przełącz motyw">
-            <i class="ti ti-sun fs-2" id="theme-icon"></i>
-          </button>
-          <a href="http://localhost:8080" target="_blank" class="btn btn-outline-secondary d-none d-sm-inline-flex align-items-center gap-2">
-            <i class="ti ti-database"></i> Adminer
-          </a>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" onclick="checkHealth()">
-            <i class="ti ti-activity"></i> Stan API
-          </button>
-        </div>
-      </div>
-    </header>
 
-    <!-- Główna zawartość -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         LEWY PASEK NAWIGACJI (Vertical Navbar)
+    ════════════════════════════════════════════════════════════════════ -->
+    <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+      <div class="container-fluid">
+
+        <!-- Logo / Marka -->
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <h1 class="navbar-brand navbar-brand-autodark">
+          <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
+            <span class="bg-primary text-white avatar avatar-sm rounded">
+              <i class="ti ti-ticket fs-4"></i>
+            </span>
+            <div>
+              <span class="fw-bold fs-4 lh-1">Tixx</span>
+              <div class="text-secondary" style="font-size:.7rem;letter-spacing:.06em;">SERVICE DESK</div>
+            </div>
+          </a>
+        </h1>
+
+        <!-- Awatar mobilny -->
+        <div class="navbar-nav flex-row d-lg-none">
+          <a href="#" class="nav-link p-0">
+            <span class="avatar avatar-sm"
+                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
+            </span>
+          </a>
+        </div>
+
+        <!-- Menu nawigacyjne -->
+        <div class="collapse navbar-collapse" id="sidebar-menu">
+          <ul class="navbar-nav pt-lg-3">
+
+            <li class="nav-item">
+              <span class="nav-link-title text-muted text-uppercase fw-bold"
+                    style="font-size:.65rem;padding:.5rem 1rem .25rem;letter-spacing:.08em;">Panel</span>
+            </li>
+
+            <li class="nav-item active" id="nav-dashboard">
+              <a class="nav-link" href="#" onclick="showView('dashboard')">
+                <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
+                <span class="nav-link-title">Dashboard</span>
+              </a>
+            </li>
+
+            <li class="nav-item" id="nav-tickets">
+              <a class="nav-link" href="#" onclick="showView('tickets')">
+                <span class="nav-link-icon"><i class="ti ti-ticket"></i></span>
+                <span class="nav-link-title">Zgłoszenia</span>
+                <span class="badge bg-red-lt ms-auto" id="badge-tickets">–</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <span class="nav-link-title text-muted text-uppercase fw-bold"
+                    style="font-size:.65rem;padding:.75rem 1rem .25rem;letter-spacing:.08em;">Administracja</span>
+            </li>
+
+            <li class="nav-item" id="nav-health">
+              <a class="nav-link" href="#" onclick="showView('health')">
+                <span class="nav-link-icon"><i class="ti ti-heartbeat"></i></span>
+                <span class="nav-link-title">Diagnostyka API</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="http://localhost:8080" target="_blank">
+                <span class="nav-link-icon"><i class="ti ti-database"></i></span>
+                <span class="nav-link-title">Adminer</span>
+                <i class="ti ti-external-link ms-auto text-muted" style="font-size:.75rem;"></i>
+              </a>
+            </li>
+
+          </ul>
+
+          <!-- Dolna sekcja sidebara: status API -->
+          <div class="mt-auto p-3 border-top text-center">
+            <a href="#" class="badge bg-green-lt d-inline-flex align-items-center justify-content-center gap-2 py-2 px-3 rounded-pill text-decoration-none"
+               onclick="showView('health')" title="Kliknij, aby otworzyć diagnostykę API">
+              <span class="badge-dot badge-dot-blink bg-green"></span>
+              <i class="ti ti-activity fs-3"></i>
+              <span class="fw-semibold">API Online</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         GŁÓWNA ZAWARTOŚĆ
+    ════════════════════════════════════════════════════════════════════ -->
     <div class="page-wrapper">
-      <!-- Nagłówek strony -->
-      <div class="page-header d-print-none">
-        <div class="container-xl">
-          <div class="row g-2 align-items-center">
-            <div class="col">
-              <div class="page-pretitle text-secondary">
-                Panel zarządzania infrastrukturą i zgłoszeniami
-              </div>
-              <h2 class="page-title d-flex align-items-center gap-2">
-                Stan Środowiska Tixx
-                <span class="badge bg-green text-green-fg badge-pill">
-                  <span class="badge-dot badge-dot-blink bg-green-fg me-1"></span> Kontenery Aktywne
-                </span>
-              </h2>
+
+      <!-- Topbar -->
+      <div class="navbar navbar-expand-md d-none d-lg-flex align-items-center border-bottom px-4 py-0"
+           style="min-height:3.5rem;">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0" id="breadcrumb">
+            <li class="breadcrumb-item">
+              <a href="#" onclick="showView('dashboard')" title="Strona główna">
+                <i class="ti ti-home"></i>
+              </a>
+            </li>
+            <li class="breadcrumb-item text-muted">Panel</li>
+            <li class="breadcrumb-item active">Dashboard</li>
+          </ol>
+        </nav>
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <!-- Przełącznik motywu (wajcha / segmented switch) -->
+          <div class="theme-switch-lever" id="theme-switch" role="button" tabindex="0"
+               onclick="toggleTheme()"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTheme();}"
+               title="Przełącz motyw (jasny / ciemny)" aria-label="Przełącz motyw">
+            <div class="theme-switch-thumb"></div>
+            <div class="theme-switch-option light" title="Motyw jasny">
+              <i class="ti ti-sun"></i>
+            </div>
+            <div class="theme-switch-option dark" title="Motyw ciemny">
+              <i class="ti ti-moon"></i>
+            </div>
+          </div>
+
+          <!-- Profil użytkownika -->
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar avatar-sm"
+                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
+            </span>
+            <div class="d-none d-xl-block">
+              <div class="fw-semibold text-truncate" style="font-size:.8125rem;line-height:1.2;">Admin Tixx</div>
+              <div class="text-muted text-truncate" style="font-size:.7rem;">admin@tixx.local</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Treść strony -->
-      <div class="page-body">
-        <div class="container-xl">
-          <!-- Kafelki metryk / usług -->
+      <!-- ── WIDOK: DASHBOARD ── -->
+      <div id="view-dashboard" class="page-body">
+        <div class="container-fluid">
+
+          <div class="page-header mb-3">
+            <div class="row g-2 align-items-center">
+              <div class="col">
+                <div class="page-pretitle text-secondary">Przegląd systemu</div>
+                <h2 class="page-title d-flex align-items-center gap-2">
+                  Stan Środowiska Tixx
+                  <span class="badge bg-green text-green-fg badge-pill">
+                    <span class="badge-dot badge-dot-blink bg-green-fg me-1"></span>Aktywny
+                  </span>
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kafelki serwisów -->
           <div class="row row-cards mb-4">
-            <div class="col-sm-6 col-lg-4">
+            <div class="col-sm-6 col-xl-3">
               <div class="card card-sm">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
                       <span class="bg-primary text-white avatar">
-                        <i class="ti ti-server-2 fs-2"></i>
+                        <i class="ti ti-server-2 fs-3"></i>
                       </span>
                     </div>
                     <div class="col">
-                      <div class="font-weight-medium">Aplikacja Webowa</div>
-                      <div class="text-secondary">Node.js + Express (port 3000)</div>
+                      <div class="fw-medium">Aplikacja Webowa</div>
+                      <div class="text-muted small">Node.js + Express · port 3000</div>
                     </div>
                     <div class="col-auto">
                       <span class="badge bg-green-lt">Online</span>
@@ -80,18 +197,18 @@
               </div>
             </div>
 
-            <div class="col-sm-6 col-lg-4">
+            <div class="col-sm-6 col-xl-3">
               <div class="card card-sm">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
                       <span class="bg-azure text-white avatar">
-                        <i class="ti ti-database fs-2"></i>
+                        <i class="ti ti-database fs-3"></i>
                       </span>
                     </div>
                     <div class="col">
-                      <div class="font-weight-medium">Baza Danych</div>
-                      <div class="text-secondary">PostgreSQL 18.6 (port 5432)</div>
+                      <div class="fw-medium">Baza Danych</div>
+                      <div class="text-muted small">PostgreSQL 18 · port 5432</div>
                     </div>
                     <div class="col-auto">
                       <span class="badge bg-green-lt">Działa</span>
@@ -101,23 +218,43 @@
               </div>
             </div>
 
-            <div class="col-sm-6 col-lg-4">
+            <div class="col-sm-6 col-xl-3">
               <div class="card card-sm">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
                       <span class="bg-teal text-white avatar">
-                        <i class="ti ti-tool fs-2"></i>
+                        <i class="ti ti-tool fs-3"></i>
                       </span>
                     </div>
                     <div class="col">
-                      <div class="font-weight-medium">Zarządzanie Bazą</div>
-                      <div class="text-secondary">Adminer GUI (port 8080)</div>
+                      <div class="fw-medium">Adminer GUI</div>
+                      <div class="text-muted small">Zarządzanie BD · port 8080</div>
                     </div>
                     <div class="col-auto">
-                      <a href="http://localhost:8080" target="_blank" class="badge bg-teal-lt text-decoration-none">
-                        Otwórz ↗
-                      </a>
+                      <a href="http://localhost:8080" target="_blank"
+                         class="badge bg-teal-lt text-decoration-none">Otwórz ↗</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-orange text-white avatar">
+                        <i class="ti ti-ticket fs-3"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="fw-medium">Otwarte zgłoszenia</div>
+                      <div class="text-muted small">Wymagają uwagi</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="fs-3 fw-bold" id="stat-open-tickets">–</span>
                     </div>
                   </div>
                 </div>
@@ -125,154 +262,318 @@
             </div>
           </div>
 
-          <!-- Karta z podglądem stanu API i diagnostyką -->
+          <!-- Statystyki wg statusu + ostatnie zgłoszenia -->
           <div class="row row-cards">
-            <div class="col-12">
-              <div class="card">
+
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="ti ti-chart-bar me-2 text-primary"></i>Zgłoszenia wg statusu
+                  </h3>
+                </div>
+                <div class="card-body p-0">
+                  <ul class="list-group list-group-flush" id="status-stats">
+                    <li class="list-group-item py-3 d-flex align-items-center gap-2">
+                      <span class="spinner-border spinner-border-sm text-muted"></span>
+                      <span class="text-muted small">Ładowanie…</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="card-footer">
+                  <a href="#" class="link-secondary small" onclick="showView('tickets')">
+                    <i class="ti ti-list me-1"></i>Pokaż wszystkie zgłoszenia
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-8">
+              <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h3 class="card-title">
-                    <i class="ti ti-heartbeat text-danger me-2"></i> Diagnostyka API (/api/health)
+                    <i class="ti ti-clock-hour-4 me-2 text-secondary"></i>Ostatnie zgłoszenia
                   </h3>
-                  <button class="btn btn-sm btn-outline-primary" onclick="checkHealth()">
-                    <i class="ti ti-refresh me-1"></i> Odśwież
+                  <button class="btn btn-sm btn-outline-primary" onclick="loadRecentTickets()">
+                    <i class="ti ti-refresh me-1"></i>Odśwież
                   </button>
                 </div>
-                <div class="card-body">
-                  <p class="text-secondary mb-3">
-                    Kliknij przycisk, aby zweryfikować połączenie z wewnętrznym API serwera Express.
-                  </p>
-                  
-                  <div id="health-card" class="d-none">
-                    <div class="row g-3" id="health-details">
-                      <!-- Wypełniane dynamicznie przez JS -->
-                    </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-vcenter table-hover card-table">
+                      <thead>
+                        <tr>
+                          <th class="text-muted" style="width:130px;">Nr</th>
+                          <th class="text-muted">Tytuł</th>
+                          <th class="text-muted" style="width:110px;">Priorytet</th>
+                          <th class="text-muted" style="width:120px;">Status</th>
+                          <th class="text-muted" style="width:140px;">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody id="recent-tickets-body">
+                        <tr>
+                          <td colspan="5" class="text-center text-muted py-4">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Ładowanie…
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  <div id="loading-spinner" class="text-center py-4 d-none">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <div class="text-secondary mt-2">Odpytywanie endpointu /api/health...</div>
-                  </div>
+          </div><!-- /row -->
+        </div><!-- /container-fluid -->
+      </div><!-- /view-dashboard -->
 
-                  <div id="raw-json-container" class="mt-3 d-none">
-                    <label class="form-label text-secondary fs-5">Odpowiedź JSON:</label>
-                    <pre id="output" class="bg-dark text-light p-3 rounded border border-secondary-subtle" style="font-family: monospace; font-size: 0.85rem;"></pre>
-                  </div>
+      <!-- ── WIDOK: ZGŁOSZENIA ── -->
+      <div id="view-tickets" class="page-body d-none">
+        <div class="container-fluid">
+
+          <div class="page-header mb-3">
+            <div class="row g-2 align-items-center">
+              <div class="col">
+                <div class="page-pretitle text-secondary">Zarządzanie</div>
+                <h2 class="page-title">
+                  <i class="ti ti-ticket me-2 text-primary"></i>Wszystkie zgłoszenia
+                </h2>
+              </div>
+              <div class="col-auto ms-auto">
+                <button class="btn btn-primary" onclick="openNewTicketModal()">
+                  <i class="ti ti-plus me-1"></i>Nowe zgłoszenie
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtry -->
+          <div class="card mb-3">
+            <div class="card-body py-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-sm-auto">
+                  <label class="form-label mb-1 small text-muted">Status</label>
+                  <select class="form-select form-select-sm" id="filter-status" onchange="loadTickets()">
+                    <option value="">Wszystkie</option>
+                    <option value="new">Nowe</option>
+                    <option value="open">Otwarte</option>
+                    <option value="in_progress">W trakcie</option>
+                    <option value="pending">Oczekujące</option>
+                    <option value="resolved">Rozwiązane</option>
+                    <option value="closed">Zamknięte</option>
+                  </select>
+                </div>
+                <div class="col-sm-auto">
+                  <label class="form-label mb-1 small text-muted">Priorytet</label>
+                  <select class="form-select form-select-sm" id="filter-priority" onchange="loadTickets()">
+                    <option value="">Wszystkie</option>
+                    <option value="critical">Krytyczny</option>
+                    <option value="high">Wysoki</option>
+                    <option value="medium">Średni</option>
+                    <option value="low">Niski</option>
+                  </select>
+                </div>
+                <div class="col-sm-auto">
+                  <label class="form-label mb-1 small text-muted">Max wyników</label>
+                  <select class="form-select form-select-sm" id="filter-limit" onchange="loadTickets()">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="col-sm-auto">
+                  <button class="btn btn-sm btn-ghost-secondary" onclick="resetFilters()">
+                    <i class="ti ti-x me-1"></i>Resetuj
+                  </button>
+                </div>
+                <div class="col-sm-auto ms-auto">
+                  <span class="text-muted small">
+                    Znaleziono: <strong id="tickets-count">–</strong>
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-      </div>
+          <!-- Tabela zgłoszeń -->
+          <div class="card">
+            <div class="table-responsive">
+              <table class="table table-vcenter table-hover">
+                <thead>
+                  <tr>
+                    <th class="text-muted" style="width:140px;">Nr zgłoszenia</th>
+                    <th class="text-muted">Tytuł</th>
+                    <th class="text-muted" style="width:140px;">Kategoria</th>
+                    <th class="text-muted" style="width:110px;">Priorytet</th>
+                    <th class="text-muted" style="width:130px;">Status</th>
+                    <th class="text-muted" style="width:160px;">Zgłaszający</th>
+                    <th class="text-muted" style="width:160px;">Przypisany</th>
+                    <th class="text-muted" style="width:90px;">Kom.</th>
+                    <th class="text-muted" style="width:150px;">Utworzono</th>
+                  </tr>
+                </thead>
+                <tbody id="tickets-body">
+                  <tr>
+                    <td colspan="9" class="text-center text-muted py-5">
+                      <span class="spinner-border spinner-border-sm me-2"></span>Ładowanie zgłoszeń…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /container-fluid -->
+      </div><!-- /view-tickets -->
+
+      <!-- ── WIDOK: DIAGNOSTYKA API ── -->
+      <div id="view-health" class="page-body d-none">
+        <div class="container-fluid">
+
+          <div class="page-header mb-3">
+            <div class="row g-2 align-items-center">
+              <div class="col">
+                <div class="page-pretitle text-secondary">Serwer</div>
+                <h2 class="page-title">
+                  <i class="ti ti-heartbeat me-2 text-danger"></i>Diagnostyka API
+                </h2>
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-outline-primary" onclick="checkHealth()">
+                  <i class="ti ti-refresh me-1"></i>Odśwież
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Endpoint: <code>/api/health</code></h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-3">Weryfikuje połączenie z wewnętrznym API serwera Express.</p>
+
+              <div id="health-card" class="d-none">
+                <div class="row g-3" id="health-details"></div>
+              </div>
+
+              <div id="loading-spinner" class="text-center py-4 d-none">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="text-muted mt-2">Odpytywanie /api/health…</div>
+              </div>
+
+              <div id="raw-json-container" class="mt-3 d-none">
+                <label class="form-label text-muted">Odpowiedź JSON:</label>
+                <pre id="output"
+                     class="bg-dark text-light p-3 rounded border border-secondary-subtle"
+                     style="font-family:monospace;font-size:.85rem;"></pre>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /container-fluid -->
+      </div><!-- /view-health -->
 
       <!-- Stopka -->
       <footer class="footer footer-transparent d-print-none">
-        <div class="container-xl">
+        <div class="container-fluid">
           <div class="row text-center align-items-center flex-row-reverse">
             <div class="col-lg-auto ms-lg-auto">
               <ul class="list-inline list-inline-dots mb-0">
                 <li class="list-inline-item">
-                  <a href="https://tabler.io" target="_blank" class="link-secondary" rel="noopener">Tabler UI</a>
+                  <a href="https://tabler.io" target="_blank" class="link-secondary" rel="noopener">
+                    Tabler UI
+                  </a>
                 </li>
               </ul>
             </div>
             <div class="col-12 col-lg-auto mt-3 mt-lg-0">
               <ul class="list-inline list-inline-dots mb-0">
-                <li class="list-inline-item">
-                  Tixx &copy; 2026 - Projekt Semestralny
-                </li>
+                <li class="list-inline-item">Tixx &copy; 2026 &mdash; Projekt Semestralny</li>
               </ul>
             </div>
           </div>
         </div>
       </footer>
+
+    </div><!-- /page-wrapper -->
+  </div><!-- /page -->
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: NOWE ZGŁOSZENIE
+  ════════════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="modal-new-ticket"
+       tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="ti ti-ticket me-2 text-primary"></i>Nowe zgłoszenie
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+        </div>
+        <div class="modal-body">
+          <div id="modal-alert" class="d-none"></div>
+          <div class="mb-3">
+            <label class="form-label required">Tytuł zgłoszenia</label>
+            <input type="text" class="form-control" id="new-title"
+                   placeholder="Krótki opis problemu…">
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Opis</label>
+            <textarea class="form-control" id="new-description" rows="4"
+                      placeholder="Szczegółowy opis problemu…"></textarea>
+          </div>
+          <div class="row g-3">
+            <div class="col-sm-4">
+              <label class="form-label required">Kategoria</label>
+              <select class="form-select" id="new-category">
+                <option value="">— wybierz —</option>
+              </select>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label required">Priorytet</label>
+              <select class="form-select" id="new-priority">
+                <option value="">— wybierz —</option>
+              </select>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label required">Zgłaszający (ID)</label>
+              <input type="number" class="form-control" id="new-reporter"
+                     placeholder="np. 1" value="1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto"
+                  data-bs-dismiss="modal">Anuluj</button>
+          <button type="button" class="btn btn-primary" onclick="submitNewTicket()">
+            <i class="ti ti-send me-1"></i>Utwórz zgłoszenie
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Tabler Core JS -->
+  <!-- ═══════════════════════════════════════════════════════════════
+       SKRYPTY – kolejność ładowania ma znaczenie
+  ════════════════════════════════════════════════════════════════════ -->
   <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
 
-  <script>
-    // Obsługa motywu (Dark / Light)
-    function toggleTheme() {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-bs-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-bs-theme', next);
-      
-      const icon = document.getElementById('theme-icon');
-      if (next === 'dark') {
-        icon.className = 'ti ti-sun fs-2';
-      } else {
-        icon.className = 'ti ti-moon fs-2';
-      }
-    }
+  <!-- 1. Helpery (badge, data, motyw) -->
+  <script src="/js/utils.js"></script>
 
-    // Odpytywanie endpointu API
-    async function checkHealth() {
-      const loading = document.getElementById('loading-spinner');
-      const healthCard = document.getElementById('health-card');
-      const rawContainer = document.getElementById('raw-json-container');
-      const output = document.getElementById('output');
-      const healthDetails = document.getElementById('health-details');
+  <!-- 2. Warstwa komunikacji z API -->
+  <script src="/js/api.js"></script>
 
-      loading.classList.remove('d-none');
-      healthCard.classList.add('d-none');
-      rawContainer.classList.add('d-none');
+  <!-- 3. Widoki (każdy plik = jeden widok) -->
+  <script src="/js/views/dashboard.js"></script>
+  <script src="/js/views/tickets.js"></script>
+  <script src="/js/views/health.js"></script>
+  <script src="/js/views/modal-ticket.js"></script>
 
-      try {
-        const res = await fetch('/api/health');
-        const data = await res.json();
+  <!-- 4. Router / inicjalizacja aplikacji -->
+  <script src="/js/app.js"></script>
 
-        // Renderowanie czytelnych kafelków ze statusem
-        healthDetails.innerHTML = `
-          <div class="col-sm-6 col-md-3">
-            <div class="p-3 bg-body-tertiary rounded border">
-              <div class="text-secondary small">Status</div>
-              <div class="fs-3 fw-bold text-success">${data.status.toUpperCase()}</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-3">
-            <div class="p-3 bg-body-tertiary rounded border">
-              <div class="text-secondary small">Uptime serwera</div>
-              <div class="fs-3 fw-bold">${Math.round(data.uptime)} s</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-3">
-            <div class="p-3 bg-body-tertiary rounded border">
-              <div class="text-secondary small">Czas serwera</div>
-              <div class="fs-4 fw-bold">${data.serverTime || '-'}</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-3">
-            <div class="p-3 bg-body-tertiary rounded border">
-              <div class="text-secondary small">Strefa czasowa</div>
-              <div class="fs-4 fw-bold">${data.timezone || 'UTC'}</div>
-            </div>
-          </div>
-        `;
-
-        healthCard.classList.remove('d-none');
-        output.textContent = JSON.stringify(data, null, 2);
-        rawContainer.classList.remove('d-none');
-      } catch (err) {
-        healthDetails.innerHTML = `
-          <div class="col-12">
-            <div class="alert alert-danger" role="alert">
-              <i class="ti ti-alert-triangle me-2"></i> Błąd pobierania danych z API: ${err.message}
-            </div>
-          </div>
-        `;
-        healthCard.classList.remove('d-none');
-      } finally {
-        loading.classList.add('d-none');
-      }
-    }
-
-    // Automatyczne sprawdzenie health check przy załadowaniu strony
-    document.addEventListener('DOMContentLoaded', () => {
-      checkHealth();
-    });
-  </script>
 </body>
 </html>

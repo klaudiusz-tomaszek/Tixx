@@ -1,0 +1,105 @@
+/* =====================================================================
+   Tixx – własne style uzupełniające Tabler UI
+   ===================================================================== */
+
+/* ── Pionowy sidebar ── */
+.navbar-vertical {
+  width: 15rem;
+}
+.navbar-vertical .nav-link-title {
+  font-size: .8125rem;
+}
+
+/* ── Aktywna pozycja menu ── */
+.navbar-vertical .nav-item.active > .nav-link {
+  background: rgba(var(--tblr-primary-rgb), .12);
+  color: var(--tblr-primary);
+  border-radius: var(--tblr-border-radius);
+}
+
+/* ── Animowany blink (wskaźnik online) ── */
+@keyframes badge-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .3; }
+}
+.badge-dot-blink {
+  animation: badge-blink 1.8s ease-in-out infinite;
+}
+
+/* ── Segmented Lever Theme Switch ("Wajcha") ── */
+.theme-switch-lever {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 64px;
+  height: 32px;
+  padding: 3px;
+  background-color: var(--tblr-bg-surface-secondary, #e9ecef);
+  border: 1px solid var(--tblr-border-color, #dee2e6);
+  border-radius: 9999px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.theme-switch-lever:focus-visible {
+  outline: 2px solid var(--tblr-primary);
+  outline-offset: 2px;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 24px;
+  background-color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
+}
+
+[data-bs-theme="dark"] .theme-switch-thumb {
+  transform: translateX(32px);
+  background-color: #1e293b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.theme-switch-option {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Kolory ikonek: tryb jasny (domyślny) */
+.theme-switch-option.light {
+  color: #f59f00; /* Ciepłe złote słońce */
+}
+.theme-switch-option.dark {
+  color: var(--tblr-secondary, #94a3b8);
+}
+
+/* Kolory ikonek: tryb ciemny */
+[data-bs-theme="dark"] .theme-switch-option.light {
+  color: var(--tblr-secondary, #64748b);
+}
+[data-bs-theme="dark"] .theme-switch-option.dark {
+  color: #38bdf8; /* Błękitny księżyc */
+}
+
+/* Efekty hover & kliknięcia */
+.theme-switch-lever:hover {
+  border-color: rgba(var(--tblr-primary-rgb), 0.5);
+}
+.theme-switch-lever:active .theme-switch-thumb {
+  width: 29px;
+}
+

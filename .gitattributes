@@ -1,0 +1,4 @@
+# Ensure shell scripts always keep LF line endings inside Docker / Linux containers
+*.sh text eol=lf
+*.sql text eol=lf
+
