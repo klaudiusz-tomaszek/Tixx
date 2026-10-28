@@ -43,12 +43,14 @@ services:
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ../../web:/app
+      - ../../server:/app
+      - ../../client:/client
       - ../web/entrypoint.sh:/entrypoint.sh:ro
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       PORT: 3000
       NODE_ENV: development
+      CLIENT_DIR: /client
       TZ: ${TZ:-Europe/Warsaw}
       DB_HOST: postgres
       DB_PORT: 5432

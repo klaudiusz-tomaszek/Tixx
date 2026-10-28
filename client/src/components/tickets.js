@@ -1,13 +1,13 @@
 /* =====================================================================
    Tixx – views/tickets.js
    Logika widoku Zgłoszenia: pełna tabela + filtry.
-   Zależności: utils.js, api.js
+   Zależności: utils.js, api.js, ticket-detail.js
    ===================================================================== */
 
 // ── Załaduj i wyrenderuj tabelę zgłoszeń ─────────────────────────────
 async function loadTickets() {
   const tbody = document.getElementById('tickets-body');
-  tbody.innerHTML = _ticketsLoadingRow();
+  tbody.innerHTML = tableLoadingRow(10);
 
   const status   = document.getElementById('filter-status').value;
   const priority = document.getElementById('filter-priority').value;
@@ -18,16 +18,14 @@ async function loadTickets() {
     document.getElementById('tickets-count').textContent = data.count;
 
     if (!data.tickets.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-5">
-        <i class="ti ti-inbox me-2"></i>Brak zgłoszeń spełniających kryteria</td></tr>`;
+      tbody.innerHTML = tableEmptyRow(10, 'Brak zgłoszeń spełniających kryteria');
       return;
     }
 
     tbody.innerHTML = data.tickets.map(_ticketRow).join('');
 
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-5">
-      <i class="ti ti-alert-triangle me-2"></i>${err.message}</td></tr>`;
+    tbody.innerHTML = tableErrorRow(10, err.message);
   }
 }
 
@@ -42,22 +40,26 @@ function resetFilters() {
 // ── Prywatne helpery ──────────────────────────────────────────────────
 function _ticketRow(t) {
   return `
-    <tr>
-      <td><code class="small">${t.ticket_number}</code></td>
+    <tr class="ticket-table-row" onclick="viewTicket(${t.id})">
       <td>
-        <div class="fw-medium">${t.title}</div>
-        <div class="text-muted small text-truncate" style="max-width:320px;">${t.description}</div>
+        <a href="#ticket-${t.id}" onclick="event.preventDefault(); event.stopPropagation(); viewTicket(${t.id});" class="text-decoration-none">
+          <code class="small fw-bold">${t.ticket_number}</code>
+        </a>
       </td>
-      <td><span class="text-muted small">${t.category_name}</span></td>
+      <td>
+        <div class="fw-medium ticket-title-link">${escapeHtml(t.title)}</div>
+        <div class="text-muted small text-truncate" style="max-width:300px;">${escapeHtml(t.description)}</div>
+      </td>
+      <td><span class="text-muted small">${escapeHtml(t.category_name)}</span></td>
       <td>${priorityBadge(t.priority_code, t.priority_name)}</td>
       <td>${statusBadge(t.status_code, t.status_name)}</td>
       <td>
-        <div class="small">${t.reporter_name}</div>
-        <div class="text-muted" style="font-size:.7rem;">${t.reporter_department || ''}</div>
+        <div class="small fw-medium">${escapeHtml(t.reporter_name)}</div>
+        <div class="text-muted" style="font-size:.7rem;">${escapeHtml(t.reporter_department || '')}</div>
       </td>
       <td>
         ${t.assignee_name
-          ? `<div class="small">${t.assignee_name}</div>`
+          ? `<div class="small">${escapeHtml(t.assignee_name)}</div>`
           : `<span class="text-muted small"><i class="ti ti-user-off me-1"></i>Nieprzypisany</span>`}
       </td>
       <td>
@@ -66,11 +68,12 @@ function _ticketRow(t) {
         </span>
       </td>
       <td><span class="text-muted small">${fmtDate(t.created_at)}</span></td>
+      <td class="text-end" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                onclick="viewTicket(${t.id})" title="Otwórz podgląd zgłoszenia">
+          <i class="ti ti-eye"></i>
+          <span class="d-none d-md-inline">Podgląd</span>
+        </button>
+      </td>
     </tr>`;
 }
-
-function _ticketsLoadingRow() {
-  return `<tr><td colspan="9" class="text-center text-muted py-5">
-    <span class="spinner-border spinner-border-sm me-2"></span>Ładowanie zgłoszeń…</td></tr>`;
-}
-

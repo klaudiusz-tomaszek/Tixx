@@ -1,5 +1,5 @@
 # Environment variables
-#.env # celowo udostępniam to w repozytorium ze względu na wymogi zadania
+.env
 
 # Node.js
 node_modules/

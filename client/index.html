@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 
   <!-- Własne style -->
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/src/assets/app.css">
 </head>
 
 <body>
@@ -115,7 +115,7 @@
     <div class="page-wrapper">
 
       <!-- Topbar -->
-      <div class="navbar navbar-expand-md d-none d-lg-flex align-items-center border-bottom px-4 py-0"
+      <div class="navbar navbar-expand-md d-none d-lg-flex align-items-center border-bottom px-4 py-0 mb-0"
            style="min-height:3.5rem;">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0" id="breadcrumb">
@@ -410,11 +410,12 @@
                     <th class="text-muted" style="width:160px;">Przypisany</th>
                     <th class="text-muted" style="width:90px;">Kom.</th>
                     <th class="text-muted" style="width:150px;">Utworzono</th>
+                    <th class="text-muted text-end" style="width:90px;">Akcja</th>
                   </tr>
                 </thead>
                 <tbody id="tickets-body">
                   <tr>
-                    <td colspan="9" class="text-center text-muted py-5">
+                    <td colspan="10" class="text-center text-muted py-5">
                       <span class="spinner-border spinner-border-sm me-2"></span>Ładowanie zgłoszeń…
                     </td>
                   </tr>
@@ -425,6 +426,281 @@
 
         </div><!-- /container-fluid -->
       </div><!-- /view-tickets -->
+
+      <!-- ── WIDOK: PODGLĄD ZGŁOSZENIA ── -->
+      <div id="view-ticket-detail" class="page-body d-none">
+        <div class="container-fluid">
+
+          <!-- Pasek nawigacji / powrót i akcje -->
+          <div class="page-header mb-3">
+            <div class="row g-2 align-items-center justify-content-between">
+              <div class="col-auto">
+                <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="showView('tickets')">
+                  <i class="ti ti-arrow-left"></i>
+                  <span>Wróć do listy zgłoszeń</span>
+                </button>
+              </div>
+              <div class="col-auto ms-auto d-flex gap-2">
+                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1" onclick="refreshTicketDetail()" title="Odśwież szczegóły">
+                  <i class="ti ti-refresh"></i>
+                  <span>Odśwież</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spinner ładowania widoku -->
+          <div id="td-loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="text-muted mt-2">Ładowanie szczegółów zgłoszenia…</div>
+          </div>
+
+          <!-- Błąd ładowania widoku -->
+          <div id="td-error" class="alert alert-danger d-none" role="alert">
+            <i class="ti ti-alert-triangle me-2"></i><span id="td-error-msg"></span>
+          </div>
+
+          <!-- Główna zawartość zgłoszenia -->
+          <div id="td-content" class="row row-cards d-none">
+
+            <!-- Lewa kolumna: Opis zgłoszenia i Komentarze -->
+            <div class="col-lg-8">
+              
+              <!-- Karta 1: Temat i treść zgłoszenia -->
+              <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title d-flex align-items-center gap-2">
+                    <i class="ti ti-file-text text-primary"></i>
+                    <span>Temat i treść zgłoszenia</span>
+                  </h3>
+                  <div>
+                    <span class="badge bg-primary-lt font-monospace px-2 py-1 fs-4 fw-bold" id="td-card-number">TIXX-...</span>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <!-- Temat zgłoszenia -->
+                  <div class="mb-2">
+                    <h1 class="page-title fs-1 fw-bold text-dark lh-sm text-wrap mb-0" id="td-body-title">
+                      Ładowanie tematu...
+                    </h1>
+                  </div>
+
+                  <!-- Dyskretny pasek informacji o zgłaszającym i dacie -->
+                  <div class="d-flex flex-wrap align-items-center gap-2 text-muted small pb-3 mb-4 border-bottom">
+                    <span class="avatar avatar-xs rounded-circle bg-primary-lt text-primary fw-bold" id="td-reporter-avatar">U</span>
+                    <span class="fw-semibold text-body" id="td-reporter-header-name">–</span>
+                    <span class="badge bg-secondary-lt text-muted px-2 py-0 d-none" id="td-reporter-dept-header">–</span>
+                    <span class="text-muted d-none d-sm-inline">&bull;</span>
+                    <span id="td-reporter-email-header" class="text-muted"></span>
+                    <span class="text-muted d-none d-sm-inline">&bull;</span>
+                    <span class="d-inline-flex align-items-center gap-1">
+                      <i class="ti ti-clock"></i>
+                      <span>Utworzono:</span>
+                      <span class="fw-medium text-body" id="td-created-at-header">–</span>
+                    </span>
+                  </div>
+
+                  <!-- Treść zgłoszenia -->
+                  <div class="ticket-description-box text-body" id="td-description">
+                    –
+                  </div>
+                </div>
+              </div>
+
+              <!-- Karta 2: Sekcja komentarzy / dyskusji -->
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title d-flex align-items-center gap-2">
+                    <i class="ti ti-messages text-primary"></i>
+                    <span>Dyskusja i historia</span>
+                    <span class="badge bg-secondary-lt" id="td-comments-badge">0</span>
+                  </h3>
+                </div>
+
+                <!-- Lista komentarzy -->
+                <div class="card-body">
+                  <div id="td-comments-list">
+                    <!-- Dynamiczne komentarze -->
+                  </div>
+                  <div id="td-no-comments" class="text-center text-muted py-4 d-none">
+                    <i class="ti ti-message-dots fs-1 mb-2 d-block"></i>
+                    <span>Brak komentarzy dla tego zgłoszenia. Dodaj pierwszą odpowiedź poniżej.</span>
+                  </div>
+                </div>
+
+                <!-- Formularz dodawania komentarza -->
+                <div class="card-footer bg-light-subtle">
+                  <form id="td-comment-form" onsubmit="event.preventDefault(); submitTicketComment();">
+                    <div id="td-comment-alert" class="alert alert-danger d-none mb-3"></div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Dodaj odpowiedź lub notatkę</label>
+                      <textarea id="td-new-comment-text" class="form-control" rows="3" placeholder="Wpisz treść wiadomości lub wewnętrznej notatki technicznej..." required></textarea>
+                    </div>
+                    <div class="row align-items-center g-2">
+                      <div class="col-sm-auto">
+                        <label class="form-check form-switch mb-0">
+                          <input class="form-check-input" type="checkbox" id="td-is-internal">
+                          <span class="form-check-label text-muted small">
+                            <i class="ti ti-lock me-1"></i>Notatka wewnętrzna (widoczna tylko dla zespołu IT)
+                          </span>
+                        </label>
+                      </div>
+                      <div class="col-sm-auto ms-sm-auto">
+                        <button type="submit" id="td-comment-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1">
+                          <i class="ti ti-send"></i>
+                          <span>Wyślij odpowiedź</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+            </div><!-- /col-lg-8 -->
+
+            <!-- Prawa kolumna: Szczegółowe metadane (Sidebar zgłoszenia) -->
+            <div class="col-lg-4">
+
+              <!-- Karta: SLA oraz Status i Priorytet -->
+              <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title d-flex align-items-center gap-2">
+                    <i class="ti ti-hourglass-high text-primary"></i>
+                    <span>SLA i Status</span>
+                  </h3>
+                  <span id="td-sla-badge" class="badge bg-blue-lt">SLA Aktywne</span>
+                </div>
+                <div class="card-body">
+                  <!-- Pasek 1: Czas podjęcia (Reakcja) -->
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="small fw-semibold text-body d-flex align-items-center gap-1">
+                        <i class="ti ti-clock-play text-muted"></i> Czas podjęcia
+                      </span>
+                      <span id="td-sla-response-status" class="badge bg-secondary-lt">–</span>
+                    </div>
+                    <div class="progress progress-sm" style="height: 6px;">
+                      <div id="td-sla-response-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                      <span class="text-muted small" id="td-sla-response-elapsed" style="font-size: 0.75rem;">–</span>
+                      <span class="text-muted small" id="td-sla-response-limit" style="font-size: 0.75rem;">Limit: –</span>
+                    </div>
+                  </div>
+
+                  <!-- Pasek 2: Czas rozwiązania -->
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="small fw-semibold text-body d-flex align-items-center gap-1">
+                        <i class="ti ti-clock-check text-muted"></i> Czas rozwiązania
+                      </span>
+                      <span id="td-sla-resolution-status" class="badge bg-secondary-lt">–</span>
+                    </div>
+                    <div class="progress progress-sm" style="height: 6px;">
+                      <div id="td-sla-resolution-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                      <span class="text-muted small" id="td-sla-resolution-elapsed" style="font-size: 0.75rem;">–</span>
+                      <span class="text-muted small" id="td-sla-resolution-limit" style="font-size: 0.75rem;">Limit: –</span>
+                    </div>
+                  </div>
+
+                  <hr class="my-3">
+
+                  <!-- Widok statusu i priorytetu poniżej w tej samej sekcji -->
+                  <ul class="list-group list-group-flush">
+                    <!-- Status ze zmianą -->
+                    <li class="list-group-item d-flex align-items-center justify-content-between px-0 py-2 border-0">
+                      <span class="text-muted small">Status:</span>
+                      <div class="d-flex align-items-center gap-2">
+                        <span id="td-status-badge"></span>
+                        <div class="dropdown">
+                          <button class="btn btn-sm btn-ghost-secondary px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Zmień status">
+                            <i class="ti ti-pencil"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end" id="td-status-dropdown">
+                            <!-- Dynamiczne statusy -->
+                          </ul>
+                        </div>
+                      </div>
+                    </li>
+                    <!-- Priorytet ze zmianą -->
+                    <li class="list-group-item d-flex align-items-center justify-content-between px-0 py-2 border-0">
+                      <span class="text-muted small">Priorytet:</span>
+                      <div class="d-flex align-items-center gap-2">
+                        <span id="td-priority-badge"></span>
+                        <div class="dropdown">
+                          <button class="btn btn-sm btn-ghost-secondary px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Zmień priorytet">
+                            <i class="ti ti-pencil"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end" id="td-priority-dropdown">
+                            <!-- Dynamiczne priorytety -->
+                          </ul>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Karta: Opiekun zgłoszenia -->
+              <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title d-flex align-items-center gap-2">
+                    <i class="ti ti-user-check text-primary"></i>
+                    <span>Opiekun zgłoszenia</span>
+                  </h3>
+                  <button class="btn btn-sm btn-ghost-primary px-2" type="button" id="td-btn-toggle-assignee" onclick="toggleAssigneeEdit()" title="Zmień opiekuna">
+                    <i class="ti ti-pencil me-1"></i><span id="td-btn-toggle-assignee-text">Zmień</span>
+                  </button>
+                </div>
+                <div class="card-body">
+                  <!-- Widok aktualnie przypisanego opiekuna -->
+                  <div id="td-assignee-display">
+                    <div class="d-flex align-items-center gap-3">
+                      <span class="avatar avatar-md rounded-circle bg-purple-lt text-purple fw-bold fs-3" id="td-assignee-avatar">IT</span>
+                      <div>
+                        <div class="fw-bold fs-3 text-body" id="td-assignee-name">Nieprzypisany</div>
+                        <div class="text-muted small" id="td-assignee-email">Oczekuje na przypisanie</div>
+                        <div class="badge bg-secondary-lt mt-1 small" id="td-assignee-dept">Brak opiekuna</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Formularz wyboru/edycji opiekuna -->
+                  <div id="td-assignee-form" class="d-none">
+                    <div class="mb-2">
+                      <label class="form-label text-muted small fw-bold text-uppercase mb-1" style="font-size: .75rem; letter-spacing: .05em;">
+                        Wybierz opiekuna zgłoszenia
+                      </label>
+                      <select class="form-select form-select-sm" id="td-assignee-select">
+                        <option value="">— Brak przypisania —</option>
+                      </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" id="td-btn-save-assignee" onclick="saveAssigneeChange()">
+                        <i class="ti ti-check"></i>
+                        <span>Zapisz</span>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="assignToMe()" title="Przypisz do aktualnie zalogowanego administratora">
+                        <i class="ti ti-user"></i>
+                        <span>Do mnie</span>
+                      </button>
+                      <button class="btn btn-sm btn-ghost-secondary ms-auto" onclick="toggleAssigneeEdit(false)">
+                        Anuluj
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /col-lg-4 -->
+
+          </div><!-- /td-content -->
+
+        </div>
+      </div><!-- /view-ticket-detail -->
 
       <!-- ── WIDOK: DIAGNOSTYKA API ── -->
       <div id="view-health" class="page-body d-none">
@@ -561,19 +837,23 @@
   <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
 
   <!-- 1. Helpery (badge, data, motyw) -->
-  <script src="/js/utils.js"></script>
+  <script src="/src/utils/utils.js"></script>
 
-  <!-- 2. Warstwa komunikacji z API -->
-  <script src="/js/api.js"></script>
+  <!-- 2. Warstwa komunikacji z API (serwisy) -->
+  <script src="/src/services/api.js"></script>
 
-  <!-- 3. Widoki (każdy plik = jeden widok) -->
-  <script src="/js/views/dashboard.js"></script>
-  <script src="/js/views/tickets.js"></script>
-  <script src="/js/views/health.js"></script>
-  <script src="/js/views/modal-ticket.js"></script>
+  <!-- 3. Komponenty UI / widoki -->
+  <script src="/src/components/dashboard.js"></script>
+  <script src="/src/components/tickets.js"></script>
+  <script src="/src/components/ticket-detail.js"></script>
+  <script src="/src/components/health.js"></script>
+  <script src="/src/components/modal-ticket.js"></script>
 
-  <!-- 4. Router / inicjalizacja aplikacji -->
-  <script src="/js/app.js"></script>
+  <!-- 4. Główna logika aplikacji -->
+  <script src="/src/App.js"></script>
+
+  <!-- 5. Bootstrap / start aplikacji -->
+  <script src="/src/main.js"></script>
 
 </body>
 </html>

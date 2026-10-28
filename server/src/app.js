@@ -9,15 +9,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serwowanie plików statycznych (frontend w Tabler UI)
-const publicDir = path.join(__dirname, '..', 'public');
-app.use(express.static(publicDir));
+const clientDir = process.env.CLIENT_DIR || path.join(__dirname, '..', '..', 'client');
+app.use(express.static(clientDir));
 
 // Rejestracja tras API (/api/health, /api/tickets, /api/dictionaries, itp.)
 app.use('/api', apiRoutes);
 
 // Strona główna
 app.get('/', (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
+  res.sendFile(path.join(clientDir, 'index.html'));
 });
 
 // Obsługa nieznanych tras API (404)
@@ -37,4 +37,3 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
-

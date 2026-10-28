@@ -113,9 +113,99 @@ async function createTicket(req, res, next) {
   }
 }
 
+// Zmiana statusu zgłoszenia
+async function updateTicketStatus(req, res, next) {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    const { status_id } = req.body;
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
+    }
+    if (!status_id) {
+      return res.status(400).json({ error: 'Pole status_id jest wymagane' });
+    }
+
+    const { rows } = await db.query(
+      'UPDATE tickets SET status_id = $1 WHERE id = $2 RETURNING *',
+      [status_id, ticketId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Zgłoszenie nie zostało odnalezione' });
+    }
+
+    res.json({
+      message: 'Status zgłoszenia został zaktualizowany',
+      ticket: rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Zmiana priorytetu zgłoszenia
+async function updateTicketPriority(req, res, next) {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    const { priority_id } = req.body;
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
+    }
+    if (!priority_id) {
+      return res.status(400).json({ error: 'Pole priority_id jest wymagane' });
+    }
+
+    const { rows } = await db.query(
+      'UPDATE tickets SET priority_id = $1 WHERE id = $2 RETURNING *',
+      [priority_id, ticketId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Zgłoszenie nie zostało odnalezione' });
+    }
+
+    res.json({
+      message: 'Priorytet zgłoszenia został zaktualizowany',
+      ticket: rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Zmiana osoby przypisanej do zgłoszenia
+async function updateTicketAssignee(req, res, next) {
+  try {
+    const ticketId = parseInt(req.params.id, 10);
+    const { assignee_id } = req.body;
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
+    }
+
+    const { rows } = await db.query(
+      'UPDATE tickets SET assignee_id = $1 WHERE id = $2 RETURNING *',
+      [assignee_id || null, ticketId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Zgłoszenie nie zostało odnalezione' });
+    }
+
+    res.json({
+      message: 'Przypisana osoba została zaktualizowana',
+      ticket: rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getTickets,
   getTicketById,
   createTicket,
+  updateTicketStatus,
+  updateTicketPriority,
+  updateTicketAssignee,
 };
 

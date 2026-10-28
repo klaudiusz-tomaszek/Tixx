@@ -103,3 +103,65 @@
   width: 29px;
 }
 
+
+/* ── Podgląd zgłoszenia (Ticket Detail) ── */
+.ticket-table-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ticket-table-row:hover {
+  background-color: rgba(var(--tblr-primary-rgb), 0.05) !important;
+}
+
+.ticket-table-row:hover .ticket-title-link {
+  color: var(--tblr-primary) !important;
+  text-decoration: underline;
+}
+
+.ticket-comment-card {
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  padding: 1.15rem;
+  margin-bottom: 1rem;
+  background-color: var(--tblr-card-bg, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ticket-comment-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.ticket-comment-card.is-internal {
+  background-color: rgba(var(--tblr-warning-rgb), 0.04);
+  border-left: 4px solid var(--tblr-warning);
+}
+
+.ticket-description-box,
+.ticket-description-text {
+  background: transparent !important;
+  border: none !important;
+  padding: 0.25rem 0.15rem;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--tblr-body-color);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Usunięcie zbędnego odstępu od górnej belki do tytułów widoków ── */
+.page-wrapper > .navbar {
+  margin-bottom: 0 !important;
+}
+
+.page-wrapper > .page-body {
+  margin-top: 0 !important;
+  padding-top: 1rem !important;
+}
+
+.page-body .page-header {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
