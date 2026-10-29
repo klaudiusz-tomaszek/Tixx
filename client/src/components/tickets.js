@@ -7,15 +7,17 @@
 // ── Załaduj i wyrenderuj tabelę zgłoszeń ─────────────────────────────
 async function loadTickets() {
   const tbody = document.getElementById('tickets-body');
+  if (!tbody) return;
   tbody.innerHTML = tableLoadingRow(10);
 
-  const status   = document.getElementById('filter-status').value;
-  const priority = document.getElementById('filter-priority').value;
-  const limit    = document.getElementById('filter-limit').value;
+  const status   = document.getElementById('filter-status')?.value || '';
+  const priority = document.getElementById('filter-priority')?.value || '';
+  const limit    = document.getElementById('filter-limit')?.value || '50';
 
   try {
     const data = await API.getTickets({ status, priority, limit });
-    document.getElementById('tickets-count').textContent = data.count;
+    const countEl = document.getElementById('tickets-count');
+    if (countEl) countEl.textContent = data.count;
 
     if (!data.tickets.length) {
       tbody.innerHTML = tableEmptyRow(10, 'Brak zgłoszeń spełniających kryteria');
@@ -31,18 +33,21 @@ async function loadTickets() {
 
 // ── Reset filtrów ─────────────────────────────────────────────────────
 function resetFilters() {
-  document.getElementById('filter-status').value   = '';
-  document.getElementById('filter-priority').value = '';
-  document.getElementById('filter-limit').value    = '50';
+  const statusEl = document.getElementById('filter-status');
+  const priEl    = document.getElementById('filter-priority');
+  const limEl    = document.getElementById('filter-limit');
+  if (statusEl) statusEl.value = '';
+  if (priEl) priEl.value = '';
+  if (limEl) limEl.value = '50';
   loadTickets();
 }
 
 // ── Prywatne helpery ──────────────────────────────────────────────────
 function _ticketRow(t) {
   return `
-    <tr class="ticket-table-row" onclick="viewTicket(${t.id})">
+    <tr class="ticket-table-row" onclick="navigateTo('/tickets/${t.id}')">
       <td>
-        <a href="#ticket-${t.id}" onclick="event.preventDefault(); event.stopPropagation(); viewTicket(${t.id});" class="text-decoration-none">
+        <a href="/tickets/${t.id}" class="text-decoration-none">
           <code class="small fw-bold">${t.ticket_number}</code>
         </a>
       </td>
@@ -69,11 +74,11 @@ function _ticketRow(t) {
       </td>
       <td><span class="text-muted small">${fmtDate(t.created_at)}</span></td>
       <td class="text-end" onclick="event.stopPropagation()">
-        <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                onclick="viewTicket(${t.id})" title="Otwórz podgląd zgłoszenia">
+        <a href="/tickets/${t.id}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+           title="Otwórz podgląd zgłoszenia">
           <i class="ti ti-eye"></i>
           <span class="d-none d-md-inline">Podgląd</span>
-        </button>
+        </a>
       </td>
     </tr>`;
 }

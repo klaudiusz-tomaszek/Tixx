@@ -40,10 +40,7 @@ async function getTickets(req, res, next) {
 // Pobranie szczegółów pojedynczego zgłoszenia wraz z komentarzami
 async function getTicketById(req, res, next) {
   try {
-    const ticketId = parseInt(req.params.id, 10);
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
-    }
+    const ticketId = req.validatedId || parseInt(req.params.id, 10);
 
     const ticketResult = await db.query('SELECT * FROM v_tickets_overview WHERE id = $1', [ticketId]);
     if (ticketResult.rows.length === 0) {
@@ -87,21 +84,24 @@ async function createTicket(req, res, next) {
     }
 
     // Domyślny status: 1 (Nowe)
-    const status_id = req.body.status_id || 1;
+    const status_id = parseInt(req.body.status_id, 10) || 1;
 
     const insertQuery = `
-      INSERT INTO tickets (title, description, category_id, priority_id, status_id, reporter_id)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO tickets (ticket_number, title, description, category_id, priority_id, status_id, reporter_id)
+      VALUES (
+        '#' || nextval('ticket_number_seq'),
+        $1, $2, $3, $4, $5, $6
+      )
       RETURNING *;
     `;
 
     const { rows } = await db.query(insertQuery, [
-      title,
-      description,
-      category_id,
-      priority_id,
+      title.trim(),
+      description.trim(),
+      parseInt(category_id, 10),
+      parseInt(priority_id, 10),
       status_id,
-      reporter_id,
+      parseInt(reporter_id, 10),
     ]);
 
     res.status(201).json({
@@ -113,22 +113,35 @@ async function createTicket(req, res, next) {
   }
 }
 
-// Zmiana statusu zgłoszenia
+// Zmiana statusu zgłoszenia (z automatycznym ustawianiem resolved_at / closed_at)
 async function updateTicketStatus(req, res, next) {
   try {
-    const ticketId = parseInt(req.params.id, 10);
-    const { status_id } = req.body;
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
-    }
+    const ticketId = req.validatedId || parseInt(req.params.id, 10);
+    const status_id = parseInt(req.body.status_id, 10);
+
     if (!status_id) {
       return res.status(400).json({ error: 'Pole status_id jest wymagane' });
     }
 
-    const { rows } = await db.query(
-      'UPDATE tickets SET status_id = $1 WHERE id = $2 RETURNING *',
-      [status_id, ticketId]
-    );
+    // Sprawdzenie czy status istnieje i odczytanie jego kodu / flagi is_final
+    const statusQuery = await db.query('SELECT id, code, is_final FROM ticket_statuses WHERE id = $1', [status_id]);
+    if (statusQuery.rows.length === 0) {
+      return res.status(400).json({ error: 'Wybrany status nie istnieje' });
+    }
+    const statusObj = statusQuery.rows[0];
+
+    let updateSql = 'UPDATE tickets SET status_id = $1';
+    if (statusObj.code === 'RESOLVED' || status_id === 4) {
+      updateSql += ', resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP)';
+    } else if (statusObj.code === 'CLOSED' || status_id === 5 || statusObj.is_final) {
+      updateSql += ', closed_at = COALESCE(closed_at, CURRENT_TIMESTAMP), resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP)';
+    } else {
+      // Wycofanie ze statusu zamkniętego (reopen)
+      updateSql += ', closed_at = NULL';
+    }
+    updateSql += ' WHERE id = $2 RETURNING *';
+
+    const { rows } = await db.query(updateSql, [status_id, ticketId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Zgłoszenie nie zostało odnalezione' });
@@ -146,11 +159,9 @@ async function updateTicketStatus(req, res, next) {
 // Zmiana priorytetu zgłoszenia
 async function updateTicketPriority(req, res, next) {
   try {
-    const ticketId = parseInt(req.params.id, 10);
-    const { priority_id } = req.body;
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
-    }
+    const ticketId = req.validatedId || parseInt(req.params.id, 10);
+    const priority_id = parseInt(req.body.priority_id, 10);
+
     if (!priority_id) {
       return res.status(400).json({ error: 'Pole priority_id jest wymagane' });
     }
@@ -176,15 +187,13 @@ async function updateTicketPriority(req, res, next) {
 // Zmiana osoby przypisanej do zgłoszenia
 async function updateTicketAssignee(req, res, next) {
   try {
-    const ticketId = parseInt(req.params.id, 10);
+    const ticketId = req.validatedId || parseInt(req.params.id, 10);
     const { assignee_id } = req.body;
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
-    }
+    const cleanAssigneeId = assignee_id ? parseInt(assignee_id, 10) : null;
 
     const { rows } = await db.query(
       'UPDATE tickets SET assignee_id = $1 WHERE id = $2 RETURNING *',
-      [assignee_id || null, ticketId]
+      [cleanAssigneeId, ticketId]
     );
 
     if (rows.length === 0) {
@@ -208,4 +217,3 @@ module.exports = {
   updateTicketPriority,
   updateTicketAssignee,
 };
-

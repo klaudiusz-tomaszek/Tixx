@@ -15,8 +15,13 @@ app.use(express.static(clientDir));
 // Rejestracja tras API (/api/health, /api/tickets, /api/dictionaries, itp.)
 app.use('/api', apiRoutes);
 
-// Strona główna
-app.get('/', (req, res) => {
+// Trasy aplikacji frontendowej SPA (HTML5 History API)
+app.get(['/', '/dashboard', '/tickets', '/tickets/*', '/health'], (req, res) => {
+  res.sendFile(path.join(clientDir, 'index.html'));
+});
+
+// Fallback dla pozostałych tras SPA (niebędących /api)
+app.get('*', (req, res) => {
   res.sendFile(path.join(clientDir, 'index.html'));
 });
 

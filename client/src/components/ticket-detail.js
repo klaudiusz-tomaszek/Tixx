@@ -12,18 +12,27 @@ let currentAssigneeId = null;
 
 /**
  * Główna funkcja otwierająca widok podglądu zgłoszenia
- * @param {number|string} id - Identyfikator zgłoszenia
+ * @param {number|string} [id] - Opcjonalny identyfikator zgłoszenia
  */
 async function viewTicket(id) {
-  const ticketId = parseInt(id, 10);
+  let ticketId = parseInt(id, 10);
+  if (isNaN(ticketId)) {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const lastPart = parts[parts.length - 1];
+    ticketId = parseInt(lastPart, 10);
+  }
+  if (isNaN(ticketId)) {
+    const urlParams = new URLSearchParams(window.location.search);
+    ticketId = parseInt(urlParams.get('id'), 10);
+  }
   if (isNaN(ticketId)) return;
 
   currentTicketId = ticketId;
-  showView('ticket-detail');
-
-  // Aktualizacja hasha w pasku adresu bez przeładowania
-  if (window.location.hash !== `#ticket-${ticketId}`) {
-    history.pushState(null, '', `#ticket-${ticketId}`);
+  if (window.location.pathname !== `/tickets/${ticketId}`) {
+    history.pushState(null, '', `/tickets/${ticketId}`);
+  }
+  if (typeof showView === 'function') {
+    showView('ticket-detail');
   }
 
   const loadingEl = document.getElementById('td-loading');
@@ -306,8 +315,8 @@ async function submitTicketComment() {
     const data = await API.getTicketById(currentTicketId);
     renderTicketDetail(data.ticket, data.comments || []);
 
-    // Odśwież również liczniki w tabeli zgłoszeń i dashboardzie w tle
-    loadRecentTickets();
+    // Odśwież również liczniki w tabeli zgłoszeń i dashboardzie jeśli obecne
+    if (typeof loadRecentTickets === 'function') loadRecentTickets();
 
   } catch (err) {
     alertEl.textContent = err.message || 'Nie udało się dodać komentarza.';
@@ -331,8 +340,8 @@ async function changeTicketStatus(statusId) {
       const data = await API.getTicketById(currentTicketId);
       renderTicketDetail(data.ticket, data.comments || []);
 
-      // Odśwież dane na liście
-      loadRecentTickets();
+      // Odśwież dane na liście jeśli funkcja dostępna
+      if (typeof loadRecentTickets === 'function') loadRecentTickets();
     }
   } catch (err) {
     alert('Błąd podczas zmiany statusu: ' + err.message);
@@ -352,8 +361,8 @@ async function changeTicketPriority(priorityId) {
       const data = await API.getTicketById(currentTicketId);
       renderTicketDetail(data.ticket, data.comments || []);
 
-      // Odśwież dane na liście
-      loadRecentTickets();
+      // Odśwież dane na liście jeśli funkcja dostępna
+      if (typeof loadRecentTickets === 'function') loadRecentTickets();
     }
   } catch (err) {
     alert('Błąd podczas zmiany priorytetu: ' + err.message);
@@ -432,7 +441,7 @@ async function saveAssigneeChange() {
       currentAssigneeId = res.ticket.assignee_id || null;
       const data = await API.getTicketById(currentTicketId);
       renderTicketDetail(data.ticket, data.comments || []);
-      loadRecentTickets();
+      if (typeof loadRecentTickets === 'function') loadRecentTickets();
     }
   } catch (err) {
     alert('Błąd podczas zmiany opiekuna: ' + err.message);

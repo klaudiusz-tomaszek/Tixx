@@ -3,12 +3,8 @@ const db = require('../config/db');
 // Dodanie nowego komentarza do zgłoszenia
 async function addComment(req, res, next) {
   try {
-    const ticketId = parseInt(req.params.id, 10);
+    const ticketId = req.validatedId || parseInt(req.params.id, 10);
     const { message, is_internal = false, author_id = 1 } = req.body;
-
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ error: 'Nieprawidłowy identyfikator zgłoszenia' });
-    }
 
     if (!message || message.trim() === '') {
       return res.status(400).json({ error: 'Treść komentarza (message) jest wymagana' });

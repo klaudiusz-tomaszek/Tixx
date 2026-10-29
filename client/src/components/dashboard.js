@@ -15,7 +15,6 @@ async function loadRecentTickets() {
 
     const openCount = data.tickets.filter(t => !t.is_closed).length;
     setTextById('stat-open-tickets', openCount);
-    setTextById('badge-tickets', openCount);
 
     buildStatusStats(data.tickets);
 
@@ -25,9 +24,9 @@ async function loadRecentTickets() {
     }
 
     tbody.innerHTML = data.tickets.map(t => `
-      <tr class="ticket-table-row" onclick="viewTicket(${t.id})">
+      <tr class="ticket-table-row" onclick="navigateTo('/tickets/${t.id}')">
         <td>
-          <a href="#ticket-${t.id}" onclick="event.preventDefault(); event.stopPropagation(); viewTicket(${t.id});" class="text-decoration-none">
+          <a href="/tickets/${t.id}" class="text-decoration-none">
             <span class="font-monospace small fw-bold">${t.ticket_number}</span>
           </a>
         </td>

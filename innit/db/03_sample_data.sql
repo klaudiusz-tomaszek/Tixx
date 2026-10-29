@@ -21,7 +21,7 @@ SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
 INSERT INTO tickets (id, ticket_number, title, description, category_id, priority_id, status_id, reporter_id, assignee_id, due_date, resolved_at, closed_at, created_at, updated_at) VALUES
 (
     1,
-    'TIXX-2026-0001',
+    '#1',
     'Błąd logowania do systemu ERP po resecie hasła',
     'Dzień dobry, po wczorajszej zmianie hasła domenowego nie mogę zalogować się do systemu Symfonia ERP. Wyświetla się komunikat o nieprawidłowych poświadczeniach.',
     3, -- Konta i uprawnienia
@@ -37,7 +37,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
 ),
 (
     2,
-    'TIXX-2026-0002',
+    '#2',
     'Cykliczny Blue Screen (BSOD) w trakcie spotkań na Teams',
     'Laptop ThinkPad T14 wyłącza się z błędem VIDEO_DXGKRNL_FATAL_ERROR podczas udostępniania ekranu na wideokonferencjach z klientami. Zdarzyło się to już 3 razy dzisiaj.',
     1, -- Sprzęt komputerowy
@@ -53,7 +53,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
 ),
 (
     3,
-    'TIXX-2026-0003',
+    '#3',
     'Wymiana tonera i konserwacja drukarki w dziale HR',
     'Drukarka HP LaserJet Pro na 3. piętrze (pokój 310) sygnalizuje bardzo niski poziom czarnego tonera (poniżej 5%) oraz pozostawia ciemne smugi na marginesach kartek.',
     5, -- Drukarki i skanery
@@ -69,7 +69,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
 ),
 (
     4,
-    'TIXX-2026-0004',
+    '#4',
     'Prośba o dostęp do dysku sieciowego Magazynu (Z:\\Dane_Logistyka)',
     'Proszę o nadanie uprawnień do zapisu dla nowo wdrożonego pracownika w folderze współdzielonym Logistyki.',
     3, -- Konta i uprawnienia
@@ -85,7 +85,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
 ),
 (
     5,
-    'TIXX-2026-0005',
+    '#5',
     'Brak możliwości połączenia z VPN z domowego łącza światłowodowego',
     'Klient OpenVPN wyrzuca komunikat: TLS Error: TLS handshake failed. Próba łączenia zarówno po UDP jak i TCP kończy się timeoutem.',
     4, -- Sieć i łączność VPN
@@ -101,7 +101,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
 ),
 (
     6,
-    'TIXX-2026-0006',
+    '#6',
     'Instalacja pakietu Figma Desktop na stacji roboczej',
     'Dzień dobry, potrzebuję aplikacji Figma Desktop do przygotowywania materiałów do nowej kampanii marketingowej.',
     2, -- Oprogramowanie i licencje
@@ -116,6 +116,7 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
     CURRENT_TIMESTAMP - INTERVAL '1 day'
 );
 SELECT setval('tickets_id_seq', (SELECT MAX(id) FROM tickets));
+SELECT setval('ticket_number_seq', (SELECT MAX(id) FROM tickets));
 
 -- Komentarze w zgłoszeniach
 INSERT INTO ticket_comments (id, ticket_id, author_id, message, is_internal, created_at) VALUES

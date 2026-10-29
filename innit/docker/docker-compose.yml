@@ -58,7 +58,7 @@ services:
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3300}:3000"
     depends_on:
       postgres:
         condition: service_healthy

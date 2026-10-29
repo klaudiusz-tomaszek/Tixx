@@ -104,11 +104,11 @@ CREATE TABLE ticket_statuses (
 -- ---------------------------------------------------------------------
 -- 4. GŁÓWNA TABELA ZGŁOSZEŃ (TICKETS)
 -- ---------------------------------------------------------------------
-CREATE SEQUENCE ticket_number_seq START 1001;
+CREATE SEQUENCE ticket_number_seq START 1;
 
 CREATE TABLE tickets (
     id SERIAL PRIMARY KEY,
-    ticket_number VARCHAR(30) NOT NULL UNIQUE DEFAULT ('TIXX-2026-' || LPAD(nextval('ticket_number_seq')::TEXT, 4, '0')),
+    ticket_number VARCHAR(30) NOT NULL UNIQUE DEFAULT ('#' || nextval('ticket_number_seq')::TEXT),
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     category_id INT NOT NULL REFERENCES ticket_categories(id) ON DELETE RESTRICT,
@@ -190,6 +190,8 @@ SELECT
     p.name AS priority_name,
     p.code AS priority_code,
     p.color AS priority_color,
+    p.sla_response_hours,
+    p.sla_resolution_hours,
     s.name AS status_name,
     s.code AS status_code,
     s.color AS status_color,
