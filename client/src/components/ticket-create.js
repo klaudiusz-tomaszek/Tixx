@@ -138,11 +138,6 @@ function _closeModalFallback(modalEl) {
   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 }
 
-// Alias dla kompatybilności wstecznej
-function openNewTicketModal() {
-  openTicketCreateModal();
-}
-
 /**
  * Wypełnienie selecta kategorii w modalu
  */

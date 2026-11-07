@@ -10,6 +10,9 @@ async function loadTickets() {
   if (!tbody) return;
   tbody.innerHTML = tableLoadingRow(10);
 
+  // Opcje filtrów ze słowników (jednorazowo); błąd słowników nie blokuje listy
+  await _ensureTicketFilters().catch(err => console.warn('Nie udało się załadować filtrów:', err));
+
   const status   = document.getElementById('filter-status')?.value || '';
   const priority = document.getElementById('filter-priority')?.value || '';
   const limit    = document.getElementById('filter-limit')?.value || '50';
@@ -43,12 +46,36 @@ function resetFilters() {
 }
 
 // ── Prywatne helpery ──────────────────────────────────────────────────
+let _ticketFiltersLoaded = false;
+
+/**
+ * Wypełnia filtry statusu i priorytetu kodami ze słowników w bazie
+ * (wartości opcji = kody, np. NEW, HIGH – dokładnie te, które filtruje API).
+ */
+async function _ensureTicketFilters() {
+  if (_ticketFiltersLoaded) return;
+  const [statuses, priorities] = await Promise.all([API.getStatuses(), API.getPriorities()]);
+  _fillFilterSelect('filter-status', statuses);
+  // Priorytety od najważniejszego (słownik jest posortowany rosnąco: LOW → CRITICAL)
+  _fillFilterSelect('filter-priority', [...priorities].reverse());
+  _ticketFiltersLoaded = true;
+}
+
+function _fillFilterSelect(id, items) {
+  const select = document.getElementById(id);
+  if (!select || !Array.isArray(items)) return;
+  const current = select.value;
+  select.innerHTML = '<option value="">Wszystkie</option>' +
+    items.map(i => `<option value="${escapeHtml(i.code)}">${escapeHtml(i.name)}</option>`).join('');
+  select.value = current;
+}
+
 function _ticketRow(t) {
   return `
     <tr class="ticket-table-row" onclick="navigateTo('/tickets/${t.id}')">
       <td>
         <a href="/tickets/${t.id}" class="text-decoration-none">
-          <code class="small fw-bold">${t.ticket_number}</code>
+          <code class="small fw-bold">${escapeHtml(t.ticket_number)}</code>
         </a>
       </td>
       <td>

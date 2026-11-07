@@ -26,19 +26,20 @@ const STATUS_BADGE = {
 function priorityBadge(code, name) {
   const key = (code || '').toString().toLowerCase();
   const cls = PRIORITY_BADGE[key] || 'bg-secondary-lt';
-  return `<span class="badge ${cls}">${name || code}</span>`;
+  return `<span class="badge ${cls}">${escapeHtml(name || code)}</span>`;
 }
 
 function statusBadge(code, name) {
   const key = (code || '').toString().toLowerCase();
   const cls = STATUS_BADGE[key] || 'bg-secondary-lt';
-  return `<span class="badge ${cls}">${name || code}</span>`;
+  return `<span class="badge ${cls}">${escapeHtml(name || code)}</span>`;
 }
 
 // ── Bezpieczne formatowanie tekstu (Escape HTML) ──────────────────────
+// Przyjmuje dowolną wartość (np. liczbę); null/undefined → pusty tekst
 function escapeHtml(text) {
-  if (!text) return '';
-  return text
+  if (text === null || text === undefined) return '';
+  return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -99,12 +100,12 @@ function tableLoadingRow(cols) {
 
 function tableEmptyRow(cols, msg) {
   return `<tr><td colspan="${cols}" class="text-center text-muted py-4">
-    <i class="ti ti-inbox me-2"></i>${msg}</td></tr>`;
+    <i class="ti ti-inbox me-2"></i>${escapeHtml(msg)}</td></tr>`;
 }
 
 function tableErrorRow(cols, msg) {
   return `<tr><td colspan="${cols}" class="text-center text-danger py-4">
-    <i class="ti ti-alert-triangle me-2"></i>${msg}</td></tr>`;
+    <i class="ti ti-alert-triangle me-2"></i>${escapeHtml(msg)}</td></tr>`;
 }
 
 function setTextById(id, val) {

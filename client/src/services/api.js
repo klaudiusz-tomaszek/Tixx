@@ -4,140 +4,101 @@
    Każda funkcja zwraca sparsowany obiekt JSON lub rzuca Error.
    ===================================================================== */
 
+/**
+ * Wspólny helper żądań HTTP.
+ * - body (obiekt) jest serializowane do JSON,
+ * - odpowiedź jest parsowana bezpiecznie (np. strona HTML przy 502 nie wywraca kodu),
+ * - przy błędzie rzuca Error z komunikatem z serwera (pole "error") lub kodem HTTP.
+ */
+async function apiRequest(url, { method = 'GET', body } = {}) {
+  const options = { method };
+  if (body !== undefined) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || `Błąd serwera (HTTP ${res.status})`);
+  }
+  return data;
+}
+
 const API = {
 
   /** GET /api/tickets?status=&priority=&limit= */
-  async getTickets({ status = '', priority = '', limit = 50 } = {}) {
-    let url = `/api/tickets?limit=${limit}`;
-    if (status)   url += `&status=${encodeURIComponent(status)}`;
-    if (priority) url += `&priority=${encodeURIComponent(priority)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getTickets({ status = '', priority = '', limit = 50 } = {}) {
+    const params = new URLSearchParams({ limit });
+    if (status)   params.set('status', status);
+    if (priority) params.set('priority', priority);
+    return apiRequest(`/api/tickets?${params}`);
   },
 
   /** GET /api/tickets/stats */
-  async getTicketStats() {
-    const res = await fetch('/api/tickets/stats');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getTicketStats() {
+    return apiRequest('/api/tickets/stats');
   },
 
   /** GET /api/tickets/:id */
-  async getTicketById(id) {
-    const res = await fetch(`/api/tickets/${id}`);
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Błąd serwera (HTTP ${res.status})`);
-    }
-    return res.json();
+  getTicketById(id) {
+    return apiRequest(`/api/tickets/${id}`);
   },
 
   /** POST /api/tickets */
-  async createTicket(payload) {
-    const res = await fetch('/api/tickets', {
-      method  : 'POST',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  createTicket(payload) {
+    return apiRequest('/api/tickets', { method: 'POST', body: payload });
   },
 
   /** POST /api/tickets/triage – propozycja kategorii i priorytetu od AI */
-  async triageTicket({ title, description }) {
-    const res = await fetch('/api/tickets/triage', {
-      method  : 'POST',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify({ title, description }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  triageTicket({ title, description }) {
+    return apiRequest('/api/tickets/triage', { method: 'POST', body: { title, description } });
   },
 
   /** POST /api/tickets/:id/comments */
-  async addComment(ticketId, payload) {
-    const res = await fetch(`/api/tickets/${ticketId}/comments`, {
-      method  : 'POST',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  addComment(ticketId, payload) {
+    return apiRequest(`/api/tickets/${ticketId}/comments`, { method: 'POST', body: payload });
   },
 
   /** PATCH /api/tickets/:id/status */
-  async updateTicketStatus(ticketId, status_id) {
-    const res = await fetch(`/api/tickets/${ticketId}/status`, {
-      method  : 'PATCH',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify({ status_id }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  updateTicketStatus(ticketId, status_id) {
+    return apiRequest(`/api/tickets/${ticketId}/status`, { method: 'PATCH', body: { status_id } });
   },
 
   /** PATCH /api/tickets/:id/assignee */
-  async updateTicketAssignee(ticketId, assignee_id) {
-    const res = await fetch(`/api/tickets/${ticketId}/assignee`, {
-      method  : 'PATCH',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify({ assignee_id }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  updateTicketAssignee(ticketId, assignee_id) {
+    return apiRequest(`/api/tickets/${ticketId}/assignee`, { method: 'PATCH', body: { assignee_id } });
   },
 
   /** PATCH /api/tickets/:id/priority */
-  async updateTicketPriority(ticketId, priority_id) {
-    const res = await fetch(`/api/tickets/${ticketId}/priority`, {
-      method  : 'PATCH',
-      headers : { 'Content-Type': 'application/json' },
-      body    : JSON.stringify({ priority_id }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+  updateTicketPriority(ticketId, priority_id) {
+    return apiRequest(`/api/tickets/${ticketId}/priority`, { method: 'PATCH', body: { priority_id } });
   },
 
   /** GET /api/dictionaries/categories */
-  async getCategories() {
-    const res = await fetch('/api/dictionaries/categories');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getCategories() {
+    return apiRequest('/api/dictionaries/categories');
   },
 
   /** GET /api/dictionaries/priorities */
-  async getPriorities() {
-    const res = await fetch('/api/dictionaries/priorities');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getPriorities() {
+    return apiRequest('/api/dictionaries/priorities');
   },
 
   /** GET /api/dictionaries/statuses */
-  async getStatuses() {
-    const res = await fetch('/api/dictionaries/statuses');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getStatuses() {
+    return apiRequest('/api/dictionaries/statuses');
   },
 
   /** GET /api/dictionaries/users */
-  async getUsers() {
-    const res = await fetch('/api/dictionaries/users');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getUsers() {
+    return apiRequest('/api/dictionaries/users');
   },
 
   /** GET /api/health */
-  async getHealth() {
-    const res = await fetch('/api/health');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  getHealth() {
+    return apiRequest('/api/health');
   },
 
 };

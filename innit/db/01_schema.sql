@@ -117,6 +117,8 @@ CREATE TABLE tickets (
     reporter_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     assignee_id INT REFERENCES users(id) ON DELETE SET NULL,
     due_date TIMESTAMPTZ,
+    -- Pierwsze podjęcie zgłoszenia (zmiana statusu z NEW lub przypisanie opiekuna) – SLA czasu reakcji
+    first_response_at TIMESTAMPTZ,
     resolved_at TIMESTAMPTZ,
     closed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -207,6 +209,7 @@ SELECT
     END AS assignee_name,
     ass.email AS assignee_email,
     t.due_date,
+    t.first_response_at,
     t.resolved_at,
     t.closed_at,
     t.created_at,

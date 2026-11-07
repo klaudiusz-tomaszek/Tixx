@@ -348,24 +348,16 @@
               <div class="row g-2 align-items-end">
                 <div class="col-sm-auto">
                   <label class="form-label mb-1 small text-muted">Status</label>
+                  <!-- Opcje wypełniane ze słownika /api/dictionaries/statuses (tickets.js) -->
                   <select class="form-select form-select-sm" id="filter-status" onchange="loadTickets()">
                     <option value="">Wszystkie</option>
-                    <option value="new">Nowe</option>
-                    <option value="open">Otwarte</option>
-                    <option value="in_progress">W trakcie</option>
-                    <option value="pending">Oczekujące</option>
-                    <option value="resolved">Rozwiązane</option>
-                    <option value="closed">Zamknięte</option>
                   </select>
                 </div>
                 <div class="col-sm-auto">
                   <label class="form-label mb-1 small text-muted">Priorytet</label>
+                  <!-- Opcje wypełniane ze słownika /api/dictionaries/priorities (tickets.js) -->
                   <select class="form-select form-select-sm" id="filter-priority" onchange="loadTickets()">
                     <option value="">Wszystkie</option>
-                    <option value="critical">Krytyczny</option>
-                    <option value="high">Wysoki</option>
-                    <option value="medium">Średni</option>
-                    <option value="low">Niski</option>
                   </select>
                 </div>
                 <div class="col-sm-auto">
@@ -894,7 +886,6 @@
   <script src="/src/components/ticket-detail.js"></script>
   <script src="/src/components/ticket-create.js"></script>
   <script src="/src/components/health.js"></script>
-  <script src="/src/components/modal-ticket.js"></script>
 
   <!-- 3. Główny Router SPA (History API) -->
   <script src="/src/App.js"></script>

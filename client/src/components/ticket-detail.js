@@ -199,7 +199,7 @@ function renderStatusDropdown(currentStatusCode) {
       <li>
         <a class="dropdown-item d-flex align-items-center justify-content-between ${isCurrent ? 'active' : ''}" 
            href="#" onclick="event.preventDefault(); changeTicketStatus(${s.id});">
-          <span>${s.name}</span>
+          <span>${escapeHtml(s.name)}</span>
           ${isCurrent ? '<i class="ti ti-check ms-2"></i>' : ''}
         </a>
       </li>`;
@@ -466,17 +466,6 @@ async function assignToMe() {
 }
 
 /**
- * Konfiguracja domyślnych czasów SLA (w godzinach) według priorytetu
- */
-const DEFAULT_SLA_CONFIG = {
-  critical : { response: 1, resolution: 4 },
-  high     : { response: 4, resolution: 8 },
-  medium   : { response: 8, resolution: 24 },
-  low      : { response: 24, resolution: 72 },
-  default  : { response: 8, resolution: 24 },
-};
-
-/**
  * Formatowanie czasu trwania na czytelną reprezentację (np. 45 min, 2h 15 min)
  */
 function formatSlaDuration(ms) {
@@ -493,11 +482,9 @@ function formatSlaDuration(ms) {
  * Renderowanie pasków postępu SLA i statusów SLA
  */
 function renderSLAProgress(ticket, comments) {
-  const priorityKey = (ticket.priority_code || '').toLowerCase();
-  const fallbackSla = DEFAULT_SLA_CONFIG[priorityKey] || DEFAULT_SLA_CONFIG.default;
-
-  const responseHours = Number(ticket.sla_response_hours) || fallbackSla.response;
-  const resolutionHours = Number(ticket.sla_resolution_hours) || fallbackSla.resolution;
+  // Czasy SLA (w godzinach) pochodzą ze słownika priorytetów w bazie (v_tickets_overview)
+  const responseHours = Number(ticket.sla_response_hours);
+  const resolutionHours = Number(ticket.sla_resolution_hours);
 
   const createdTime = new Date(ticket.created_at).getTime();
   const now = Date.now();
@@ -523,11 +510,12 @@ function renderSLAProgress(ticket, comments) {
   const responseLimitMs = responseHours * 3600 * 1000;
   if (respLimitEl) respLimitEl.textContent = `Limit: ${responseHours}h`;
 
-  // Sprawdzamy czy zgłoszenie zostało już podjęte (status inny niż NOWY lub przypisany opiekun)
-  const isPickedUp = (ticket.status_code && ticket.status_code.toUpperCase() !== 'NEW') || Boolean(ticket.assignee_id);
+  // Zgłoszenie jest podjęte, gdy serwer zapisał moment pierwszej reakcji
+  // (pierwsza zmiana statusu z NEW lub pierwsze przypisanie opiekuna) – nie zmienia się przy późniejszych edycjach
+  const isPickedUp = Boolean(ticket.first_response_at);
 
   if (isPickedUp) {
-    const pickupTime = new Date(ticket.updated_at || ticket.created_at).getTime();
+    const pickupTime = new Date(ticket.first_response_at).getTime();
     const duration = Math.max(0, pickupTime - createdTime);
     const met = duration <= responseLimitMs;
 

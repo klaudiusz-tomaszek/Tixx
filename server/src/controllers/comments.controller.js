@@ -1,13 +1,18 @@
 const db = require('../config/db');
+const { parsePositiveInt } = require('../middleware/validators');
 
 // Dodanie nowego komentarza do zgłoszenia
 async function addComment(req, res, next) {
   try {
     const ticketId = req.validatedId || parseInt(req.params.id, 10);
-    const { message, is_internal = false, author_id = 1 } = req.body;
+    const { message, is_internal = false } = req.body;
+    const author_id = req.body.author_id === undefined ? 1 : parsePositiveInt(req.body.author_id);
 
-    if (!message || message.trim() === '') {
+    if (typeof message !== 'string' || message.trim() === '') {
       return res.status(400).json({ error: 'Treść komentarza (message) jest wymagana' });
+    }
+    if (!author_id) {
+      return res.status(400).json({ error: 'Nieprawidłowy identyfikator autora (author_id)' });
     }
 
     const insertQuery = `

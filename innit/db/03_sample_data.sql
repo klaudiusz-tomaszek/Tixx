@@ -116,6 +116,20 @@ INSERT INTO tickets (id, ticket_number, title, description, category_id, priorit
     CURRENT_TIMESTAMP - INTERVAL '1 day'
 );
 SELECT setval('tickets_id_seq', (SELECT MAX(id) FROM tickets));
+
+-- Moment pierwszego podjęcia zgłoszeń (SLA czasu reakcji); #3 jest nadal nowe i nieprzypisane.
+-- Trigger updated_at jest na chwilę wyłączony, aby nie nadpisać przykładowych dat modyfikacji.
+ALTER TABLE tickets DISABLE TRIGGER trg_tickets_updated_at;
+UPDATE tickets SET first_response_at = v.first_response_at
+FROM (VALUES
+    (1, CURRENT_TIMESTAMP - INTERVAL '2 hours 30 minutes'),
+    (2, CURRENT_TIMESTAMP - INTERVAL '1 hour 30 minutes'),
+    (4, CURRENT_TIMESTAMP - INTERVAL '4 hours'),
+    (5, CURRENT_TIMESTAMP - INTERVAL '22 hours'),
+    (6, CURRENT_TIMESTAMP - INTERVAL '2 days 20 hours')
+) AS v(id, first_response_at)
+WHERE tickets.id = v.id;
+ALTER TABLE tickets ENABLE TRIGGER trg_tickets_updated_at;
 SELECT setval('ticket_number_seq', (SELECT MAX(id) FROM tickets));
 
 -- Komentarze w zgłoszeniach

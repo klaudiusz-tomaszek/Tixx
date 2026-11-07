@@ -1,21 +1,31 @@
 const db = require('../config/db');
 const { suggestTriage, TriageError } = require('../services/triage.service');
+const { parsePositiveInt } = require('../middleware/validators');
+
+// Limity liczby zwracanych zgłoszeń na liście
+const DEFAULT_LIST_LIMIT = 50;
+const MAX_LIST_LIMIT = 200;
+
+// Pierwsza reakcja (SLA czasu podjęcia): zapisywana raz, przy pierwszym podjęciu zgłoszenia
+const SET_FIRST_RESPONSE = 'first_response_at = COALESCE(first_response_at, CURRENT_TIMESTAMP)';
 
 // Pobranie listy zgłoszeń (z możliwością filtrowania po statusie i priorytecie)
 async function getTickets(req, res, next) {
   try {
-    const { status, priority, limit = 50 } = req.query;
+    const { status, priority } = req.query;
+    const limit = Math.min(parsePositiveInt(req.query.limit) || DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT);
     let query = 'SELECT * FROM v_tickets_overview';
     const conditions = [];
     const params = [];
 
-    if (status) {
-      params.push(status);
+    // Kody w słownikach są zapisane wielkimi literami (np. NEW, HIGH)
+    if (typeof status === 'string' && status) {
+      params.push(status.toUpperCase());
       conditions.push(`status_code = $${params.length}`);
     }
 
-    if (priority) {
-      params.push(priority);
+    if (typeof priority === 'string' && priority) {
+      params.push(priority.toUpperCase());
       conditions.push(`priority_code = $${params.length}`);
     }
 
@@ -25,7 +35,7 @@ async function getTickets(req, res, next) {
 
     query += ' ORDER BY created_at DESC';
 
-    params.push(parseInt(limit, 10));
+    params.push(limit);
     query += ` LIMIT $${params.length}`;
 
     const { rows } = await db.query(query, params);
@@ -95,22 +105,28 @@ async function getTicketById(req, res, next) {
 // Utworzenie nowego zgłoszenia
 async function createTicket(req, res, next) {
   try {
-    const { title, description, category_id, priority_id, reporter_id } = req.body;
+    const { title, description } = req.body;
+    const category_id = parsePositiveInt(req.body.category_id);
+    const priority_id = parsePositiveInt(req.body.priority_id);
+    const reporter_id = parsePositiveInt(req.body.reporter_id);
 
-    if (!title || !description || !category_id || !priority_id || !reporter_id) {
+    if (typeof title !== 'string' || typeof description !== 'string' ||
+        !title.trim() || !description.trim() || !category_id || !priority_id || !reporter_id) {
       return res.status(400).json({
         error: 'Pola title, description, category_id, priority_id i reporter_id są wymagane.',
       });
     }
 
     // Domyślny status: 1 (Nowe)
-    const status_id = parseInt(req.body.status_id, 10) || 1;
+    const status_id = parsePositiveInt(req.body.status_id) || 1;
 
+    // Zgłoszenie utworzone od razu w statusie innym niż NEW jest już podjęte (first_response_at)
     const insertQuery = `
-      INSERT INTO tickets (ticket_number, title, description, category_id, priority_id, status_id, reporter_id)
+      INSERT INTO tickets (ticket_number, title, description, category_id, priority_id, status_id, reporter_id, first_response_at)
       VALUES (
         '#' || nextval('ticket_number_seq'),
-        $1, $2, $3, $4, $5, $6
+        $1, $2, $3, $4, $5, $6,
+        CASE WHEN (SELECT code FROM ticket_statuses WHERE id = $5) <> 'NEW' THEN CURRENT_TIMESTAMP END
       )
       RETURNING *;
     `;
@@ -118,10 +134,10 @@ async function createTicket(req, res, next) {
     const { rows } = await db.query(insertQuery, [
       title.trim(),
       description.trim(),
-      parseInt(category_id, 10),
-      parseInt(priority_id, 10),
+      category_id,
+      priority_id,
       status_id,
-      parseInt(reporter_id, 10),
+      reporter_id,
     ]);
 
     res.status(201).json({
@@ -159,7 +175,7 @@ async function triageTicket(req, res, next) {
 async function updateTicketStatus(req, res, next) {
   try {
     const ticketId = req.validatedId || parseInt(req.params.id, 10);
-    const status_id = parseInt(req.body.status_id, 10);
+    const status_id = parsePositiveInt(req.body.status_id);
 
     if (!status_id) {
       return res.status(400).json({ error: 'Pole status_id jest wymagane' });
@@ -184,6 +200,10 @@ async function updateTicketStatus(req, res, next) {
     } else {
       updateSql += ', resolved_at = NULL, closed_at = NULL';
     }
+    // Każdy status inny niż NEW oznacza, że zgłoszenie zostało podjęte
+    if (statusObj.code !== 'NEW') {
+      updateSql += `, ${SET_FIRST_RESPONSE}`;
+    }
     updateSql += ' WHERE id = $2 RETURNING *';
 
     const { rows } = await db.query(updateSql, [status_id, ticketId]);
@@ -205,10 +225,15 @@ async function updateTicketStatus(req, res, next) {
 async function updateTicketPriority(req, res, next) {
   try {
     const ticketId = req.validatedId || parseInt(req.params.id, 10);
-    const priority_id = parseInt(req.body.priority_id, 10);
+    const priority_id = parsePositiveInt(req.body.priority_id);
 
     if (!priority_id) {
       return res.status(400).json({ error: 'Pole priority_id jest wymagane' });
+    }
+
+    const priorityQuery = await db.query('SELECT 1 FROM ticket_priorities WHERE id = $1', [priority_id]);
+    if (priorityQuery.rows.length === 0) {
+      return res.status(400).json({ error: 'Wybrany priorytet nie istnieje' });
     }
 
     const { rows } = await db.query(
@@ -234,12 +259,26 @@ async function updateTicketAssignee(req, res, next) {
   try {
     const ticketId = req.validatedId || parseInt(req.params.id, 10);
     const { assignee_id } = req.body;
-    const cleanAssigneeId = assignee_id ? parseInt(assignee_id, 10) : null;
 
-    const { rows } = await db.query(
-      'UPDATE tickets SET assignee_id = $1 WHERE id = $2 RETURNING *',
-      [cleanAssigneeId, ticketId]
-    );
+    // Brak wartości (null / "" / 0) = usunięcie przypisania
+    let cleanAssigneeId = null;
+    if (assignee_id) {
+      cleanAssigneeId = parsePositiveInt(assignee_id);
+      if (!cleanAssigneeId) {
+        return res.status(400).json({ error: 'Nieprawidłowy identyfikator opiekuna (assignee_id)' });
+      }
+      const userQuery = await db.query('SELECT 1 FROM users WHERE id = $1 AND is_active = TRUE', [cleanAssigneeId]);
+      if (userQuery.rows.length === 0) {
+        return res.status(400).json({ error: 'Wybrany opiekun nie istnieje lub jest nieaktywny' });
+      }
+    }
+
+    // Przypisanie opiekuna oznacza podjęcie zgłoszenia (SLA czasu podjęcia)
+    const updateSql = cleanAssigneeId
+      ? `UPDATE tickets SET assignee_id = $1, ${SET_FIRST_RESPONSE} WHERE id = $2 RETURNING *`
+      : 'UPDATE tickets SET assignee_id = $1 WHERE id = $2 RETURNING *';
+
+    const { rows } = await db.query(updateSql, [cleanAssigneeId, ticketId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Zgłoszenie nie zostało odnalezione' });

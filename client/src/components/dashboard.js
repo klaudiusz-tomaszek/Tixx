@@ -28,7 +28,7 @@ async function loadRecentTickets() {
       <tr class="ticket-table-row" onclick="navigateTo('/tickets/${t.id}')">
         <td>
           <a href="/tickets/${t.id}" class="text-decoration-none">
-            <span class="font-monospace small fw-bold">${t.ticket_number}</span>
+            <span class="font-monospace small fw-bold">${escapeHtml(t.ticket_number)}</span>
           </a>
         </td>
         <td>

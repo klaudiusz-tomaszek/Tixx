@@ -22,7 +22,7 @@ async function checkHealth() {
       <div class="col-sm-6 col-md-3">
         <div class="p-3 bg-body-tertiary rounded border">
           <div class="text-muted small">Status</div>
-          <div class="fs-3 fw-bold text-success">${data.status.toUpperCase()}</div>
+          <div class="fs-3 fw-bold text-success">${escapeHtml(String(data.status).toUpperCase())}</div>
         </div>
       </div>
       <div class="col-sm-6 col-md-3">
@@ -34,13 +34,13 @@ async function checkHealth() {
       <div class="col-sm-6 col-md-3">
         <div class="p-3 bg-body-tertiary rounded border">
           <div class="text-muted small">Czas serwera</div>
-          <div class="fs-4 fw-bold">${data.serverTime || '–'}</div>
+          <div class="fs-4 fw-bold">${escapeHtml(data.serverTime || '–')}</div>
         </div>
       </div>
       <div class="col-sm-6 col-md-3">
         <div class="p-3 bg-body-tertiary rounded border">
           <div class="text-muted small">Strefa czasowa</div>
-          <div class="fs-4 fw-bold">${data.timezone || 'UTC'}</div>
+          <div class="fs-4 fw-bold">${escapeHtml(data.timezone || 'UTC')}</div>
         </div>
       </div>`;
 
@@ -52,7 +52,7 @@ async function checkHealth() {
     details.innerHTML = `
       <div class="col-12">
         <div class="alert alert-danger" role="alert">
-          <i class="ti ti-alert-triangle me-2"></i>Błąd pobierania danych: ${err.message}
+          <i class="ti ti-alert-triangle me-2"></i>Błąd pobierania danych: ${escapeHtml(err.message)}
         </div>
       </div>`;
     healthCard.classList.remove('d-none');
