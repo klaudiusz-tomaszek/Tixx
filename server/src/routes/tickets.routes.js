@@ -6,6 +6,9 @@ const { validateId } = require('../middleware/validators');
 // GET /api/tickets - lista zgłoszeń
 router.get('/', ticketsController.getTickets);
 
+// GET /api/tickets/stats - statystyki po wszystkich zgłoszeniach (przed /:id!)
+router.get('/stats', ticketsController.getTicketStats);
+
 // GET /api/tickets/:id - szczegóły zgłoszenia z komentarzami
 router.get('/:id', validateId, ticketsController.getTicketById);
 

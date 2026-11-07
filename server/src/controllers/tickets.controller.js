@@ -37,6 +37,25 @@ async function getTickets(req, res, next) {
   }
 }
 
+// Statystyki: liczba otwartych zgłoszeń i rozkład wg statusów (całość, bez limitu)
+async function getTicketStats(req, res, next) {
+  try {
+    const { rows } = await db.query(
+      `SELECT s.code AS status_code, s.name AS status_name, s.is_final,
+              COUNT(t.id)::int AS count
+       FROM ticket_statuses s
+       LEFT JOIN tickets t ON t.status_id = s.id
+       GROUP BY s.id
+       ORDER BY s.sort_order ASC`
+    );
+    const total = rows.reduce((sum, r) => sum + r.count, 0);
+    const open = rows.filter((r) => !r.is_final).reduce((sum, r) => sum + r.count, 0);
+    res.json({ total, open, by_status: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Pobranie szczegółów pojedynczego zgłoszenia wraz z komentarzami
 async function getTicketById(req, res, next) {
   try {
@@ -130,14 +149,17 @@ async function updateTicketStatus(req, res, next) {
     }
     const statusObj = statusQuery.rows[0];
 
+    // Daty zależą wyłącznie od kodu statusu / flagi is_final (bez magicznych id):
+    // - RESOLVED: ustaw resolved_at, wyczyść closed_at (np. powrót z CLOSED)
+    // - status końcowy (CLOSED, REJECTED): ustaw closed_at i resolved_at
+    // - pozostałe (reopen): wyczyść oba znaczniki
     let updateSql = 'UPDATE tickets SET status_id = $1';
-    if (statusObj.code === 'RESOLVED' || status_id === 4) {
-      updateSql += ', resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP)';
-    } else if (statusObj.code === 'CLOSED' || status_id === 5 || statusObj.is_final) {
+    if (statusObj.code === 'RESOLVED') {
+      updateSql += ', resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP), closed_at = NULL';
+    } else if (statusObj.is_final) {
       updateSql += ', closed_at = COALESCE(closed_at, CURRENT_TIMESTAMP), resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP)';
     } else {
-      // Wycofanie ze statusu zamkniętego (reopen)
-      updateSql += ', closed_at = NULL';
+      updateSql += ', resolved_at = NULL, closed_at = NULL';
     }
     updateSql += ' WHERE id = $2 RETURNING *';
 
@@ -211,6 +233,7 @@ async function updateTicketAssignee(req, res, next) {
 
 module.exports = {
   getTickets,
+  getTicketStats,
   getTicketById,
   createTicket,
   updateTicketStatus,

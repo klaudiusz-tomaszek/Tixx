@@ -11,12 +11,13 @@ async function loadRecentTickets() {
   tbody.innerHTML = tableLoadingRow(5);
 
   try {
-    const data = await API.getTickets({ limit: 8 });
+    const [data, stats] = await Promise.all([
+      API.getTickets({ limit: 8 }),
+      API.getTicketStats(),
+    ]);
 
-    const openCount = data.tickets.filter(t => !t.is_closed).length;
-    setTextById('stat-open-tickets', openCount);
-
-    buildStatusStats(data.tickets);
+    setTextById('stat-open-tickets', stats.open);
+    buildStatusStats(stats.by_status);
 
     if (!data.tickets.length) {
       tbody.innerHTML = tableEmptyRow(5, 'Brak zgłoszeń');
@@ -45,24 +46,19 @@ async function loadRecentTickets() {
 }
 
 // ── Lista statystyk wg statusu (lewy panel) ───────────────────────────
-function buildStatusStats(tickets) {
-  const counts = {};
-  tickets.forEach(t => {
-    const key = t.status_name || t.status_code;
-    if (!counts[key]) counts[key] = { count: 0, code: t.status_code };
-    counts[key].count++;
-  });
-
+function buildStatusStats(byStatus) {
   const ul = document.getElementById('status-stats');
   if (!ul) return;
-  if (!Object.keys(counts).length) {
+
+  const rows = byStatus.filter(s => s.count > 0);
+  if (!rows.length) {
     ul.innerHTML = `<li class="list-group-item text-muted small py-3">Brak danych</li>`;
     return;
   }
 
-  ul.innerHTML = Object.entries(counts).map(([name, obj]) => `
+  ul.innerHTML = rows.map(s => `
     <li class="list-group-item d-flex align-items-center py-2 gap-2">
-      ${statusBadge(obj.code, name)}
-      <span class="ms-auto fw-semibold">${obj.count}</span>
+      ${statusBadge(s.status_code, s.status_name)}
+      <span class="ms-auto fw-semibold">${s.count}</span>
     </li>`).join('');
 }

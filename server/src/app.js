@@ -15,22 +15,17 @@ app.use(express.static(clientDir));
 // Rejestracja tras API (/api/health, /api/tickets, /api/dictionaries, itp.)
 app.use('/api', apiRoutes);
 
-// Trasy aplikacji frontendowej SPA (HTML5 History API)
-app.get(['/', '/dashboard', '/tickets', '/tickets/*', '/health'], (req, res) => {
-  res.sendFile(path.join(clientDir, 'index.html'));
-});
-
-// Fallback dla pozostałych tras SPA (niebędących /api)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientDir, 'index.html'));
-});
-
-// Obsługa nieznanych tras API (404)
-app.use('/api/*', (req, res) => {
+// Obsługa nieznanych tras API (404) – musi być przed fallbackiem SPA
+app.use('/api', (req, res) => {
   res.status(404).json({
     error: 'Endpoint nie został odnaleziony',
     path: req.originalUrl,
   });
+});
+
+// Trasy aplikacji frontendowej SPA (HTML5 History API) + fallback dla pozostałych tras
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDir, 'index.html'));
 });
 
 // Globalny handler błędów

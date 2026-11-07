@@ -16,6 +16,13 @@ const API = {
     return res.json();
   },
 
+  /** GET /api/tickets/stats */
+  async getTicketStats() {
+    const res = await fetch('/api/tickets/stats');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+
   /** GET /api/tickets/:id */
   async getTicketById(id) {
     const res = await fetch(`/api/tickets/${id}`);
