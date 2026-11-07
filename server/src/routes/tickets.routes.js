@@ -15,6 +15,9 @@ router.get('/:id', validateId, ticketsController.getTicketById);
 // POST /api/tickets - dodanie nowego zgłoszenia
 router.post('/', ticketsController.createTicket);
 
+// POST /api/tickets/triage - propozycja kategorii i priorytetu od AI (bez zapisu)
+router.post('/triage', ticketsController.triageTicket);
+
 // PATCH /api/tickets/:id/status - zmiana statusu
 router.patch('/:id/status', validateId, ticketsController.updateTicketStatus);
 

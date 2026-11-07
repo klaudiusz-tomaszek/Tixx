@@ -45,6 +45,18 @@ const API = {
     return data;
   },
 
+  /** POST /api/tickets/triage – propozycja kategorii i priorytetu od AI */
+  async triageTicket({ title, description }) {
+    const res = await fetch('/api/tickets/triage', {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json' },
+      body    : JSON.stringify({ title, description }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
   /** POST /api/tickets/:id/comments */
   async addComment(ticketId, payload) {
     const res = await fetch(`/api/tickets/${ticketId}/comments`, {

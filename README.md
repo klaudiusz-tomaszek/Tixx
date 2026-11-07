@@ -26,12 +26,13 @@ Głównym celem projektu **Tixx** jest stworzenie prostego i funkcjonalnego syst
 
 ## 🚀 Uruchomienie projektu
 
-1. Uruchomienie wszystkich serwisów za pomocą Docker Compose (z głównego katalogu):
-   ```bash
-   docker compose -f innit/docker/docker-compose.yml up -d
-   ```
-   *Alternatywnie możesz wejść do katalogu `innit/docker` i wykonać `docker compose up -d`.*
+1. Skopiuj plik `.env.example` do `.env` (w głównym katalogu) i uzupełnij wartości, m.in. `GEMINI_API_KEY` dla podpowiedzi AI przy tworzeniu zgłoszeń.
 
-2. Dostęp do usług w przeglądarce:
+2. Uruchomienie wszystkich serwisów za pomocą Docker Compose (z głównego katalogu):
+   ```bash
+   docker compose up -d
+   ```
+
+3. Dostęp do usług w przeglądarce:
    - **Aplikacja Webowa:** [http://localhost:3000](http://localhost:3000)
    - **Adminer (baza danych):** [http://localhost:8080](http://localhost:8080)

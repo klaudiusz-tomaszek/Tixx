@@ -785,35 +785,8 @@
             <!-- Alert błędu / sukcesu -->
             <div id="modal-create-ticket-alert" class="alert d-none" role="alert"></div>
 
+            <!-- KROK 1: dane od zgłaszającego -->
             <div class="row g-3">
-              <!-- Temat zgłoszenia -->
-              <div class="col-12">
-                <label class="form-label required" for="modal-ticket-title">Temat zgłoszenia</label>
-                <input type="text" class="form-control" id="modal-ticket-title"
-                       placeholder="Krótki, zrozumiały temat (np. Brak dostępu do drukarki sieciowej HP na 2. piętrze)"
-                       required minlength="3" maxlength="255">
-                <small class="form-hint">Zwięzłe podsumowanie problemu technicznego.</small>
-              </div>
-
-              <!-- Kategoria i Priorytet obok siebie -->
-              <div class="col-md-6">
-                <label class="form-label required" for="modal-ticket-category">Kategoria</label>
-                <select class="form-select" id="modal-ticket-category" required>
-                  <option value="">Ładowanie kategorii…</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="form-label required mb-0" for="modal-ticket-priority">Priorytet</label>
-                  <span id="modal-priority-preview-badge"><span class="badge bg-secondary-lt">–</span></span>
-                </div>
-                <select class="form-select" id="modal-ticket-priority" onchange="updateModalPriorityPreview()" required>
-                  <option value="">Ładowanie priorytetów…</option>
-                </select>
-                <div class="text-muted small mt-1" id="modal-priority-preview-desc" style="font-size:.75rem;"></div>
-              </div>
-
               <!-- Zgłaszający -->
               <div class="col-12">
                 <label class="form-label required" for="modal-ticket-reporter">Osoba zgłaszająca</label>
@@ -836,13 +809,52 @@
                 </div>
               </div>
 
+              <!-- Temat zgłoszenia -->
+              <div class="col-12">
+                <label class="form-label required" for="modal-ticket-title">Temat zgłoszenia</label>
+                <input type="text" class="form-control" id="modal-ticket-title"
+                       placeholder="Krótki, zrozumiały temat (np. Brak dostępu do drukarki sieciowej HP na 2. piętrze)"
+                       required minlength="3" maxlength="255" oninput="onTicketContentChanged()">
+                <small class="form-hint">Zwięzłe podsumowanie problemu technicznego.</small>
+              </div>
+
               <!-- Opis problemu -->
               <div class="col-12">
                 <label class="form-label required" for="modal-ticket-description">Szczegółowy opis problemu</label>
                 <textarea class="form-control" id="modal-ticket-description" rows="5"
                           placeholder="Opisz dokładnie występujący problem, kroki do jego odtworzenia lub treść ewentualnych komunikatów o błędach…"
-                          required minlength="5"></textarea>
+                          required minlength="5" oninput="onTicketContentChanged()"></textarea>
                 <small class="form-hint">Dokładne informacje pozwolą zespołowi IT szybciej rozwiązać incydent.</small>
+              </div>
+            </div>
+
+            <!-- KROK 2: wynik weryfikacji AI – kategoria i priorytet do ewentualnej poprawy -->
+            <div id="modal-ticket-review" class="d-none">
+              <hr class="my-3">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="bg-primary-lt avatar avatar-xs rounded"><i class="ti ti-sparkles text-primary"></i></span>
+                <span class="fw-bold">Weryfikacja AI</span>
+              </div>
+              <div id="modal-ticket-ai-result" class="alert alert-info mb-3" role="status"></div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label required" for="modal-ticket-category">Kategoria</label>
+                  <select class="form-select" id="modal-ticket-category">
+                    <option value="">Ładowanie kategorii…</option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label required mb-0" for="modal-ticket-priority">Priorytet</label>
+                    <span id="modal-priority-preview-badge"><span class="badge bg-secondary-lt">–</span></span>
+                  </div>
+                  <select class="form-select" id="modal-ticket-priority" onchange="updateModalPriorityPreview()">
+                    <option value="">Ładowanie priorytetów…</option>
+                  </select>
+                  <div class="text-muted small mt-1" id="modal-priority-preview-desc" style="font-size:.75rem;"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -851,7 +863,12 @@
             <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal" onclick="closeTicketCreateModal()">
               Anuluj
             </button>
-            <button type="submit" id="modal-ticket-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1">
+            <button type="button" id="modal-ticket-verify-btn" class="btn btn-primary d-inline-flex align-items-center gap-1"
+                    onclick="verifyTicketWithAi()">
+              <i class="ti ti-sparkles fs-2"></i>
+              <span>Weryfikuj z AI</span>
+            </button>
+            <button type="submit" id="modal-ticket-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1 d-none">
               <i class="ti ti-check fs-2"></i>
               <span>Utwórz zgłoszenie</span>
             </button>

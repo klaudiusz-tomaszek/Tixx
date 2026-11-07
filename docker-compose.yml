@@ -15,7 +15,7 @@ services:
     tmpfs:
       - /var/lib/postgresql
     volumes:
-      - ../db:/docker-entrypoint-initdb.d:ro
+      - ./innit/db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tixx}"]
       interval: 5s
@@ -39,13 +39,13 @@ services:
       - tixx_network
 
   webserver:
-    image: node:20-alpine
+    image: node:22-alpine
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ../../server:/app
-      - ../../client:/client
-      - ../web/entrypoint.sh:/entrypoint.sh:ro
+      - ./server:/app
+      - ./client:/client
+      - ./innit/web/entrypoint.sh:/entrypoint.sh:ro
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       PORT: 3000
@@ -57,6 +57,8 @@ services:
       DB_NAME: ${POSTGRES_DB:-tixx}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_TRIAGE_MODEL: ${AI_TRIAGE_MODEL:-gemini-3.5-flash-lite}
     ports:
       - "${WEB_PORT:-3300}:3000"
     depends_on:

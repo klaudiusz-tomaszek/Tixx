@@ -282,12 +282,16 @@ async function submitTicketCreateModal(event) {
 
   _clearModalAlert();
 
-  // Walidacja
-  if (!title || title.length < 3) {
-    _showModalAlert('danger', 'Temat zgłoszenia musi zawierać co najmniej 3 znaki.');
-    titleEl?.focus();
+  // Walidacja kroku 1
+  if (!_validateTicketStep1()) return;
+
+  // Bez weryfikacji AI nie można utworzyć zgłoszenia (np. Enter w polu tematu) – uruchom weryfikację
+  if (!_ticketReview.done) {
+    verifyTicketWithAi();
     return;
   }
+
+  // Walidacja kroku 2
   if (!category_id) {
     _showModalAlert('danger', 'Proszę wybrać kategorię problemu.');
     catEl?.focus();
@@ -296,16 +300,6 @@ async function submitTicketCreateModal(event) {
   if (!priority_id) {
     _showModalAlert('danger', 'Proszę wybrać priorytet zgłoszenia.');
     priEl?.focus();
-    return;
-  }
-  if (!reporter_id) {
-    _showModalAlert('danger', 'Proszę wybrać osobę zgłaszającą.');
-    repEl?.focus();
-    return;
-  }
-  if (!description || description.length < 5) {
-    _showModalAlert('danger', 'Opis problemu musi zawierać co najmniej 5 znaków.');
-    descEl?.focus();
     return;
   }
 
@@ -352,7 +346,145 @@ async function submitTicketCreateModal(event) {
   }
 }
 
+/* ---------------------------------------------------------------------
+   Weryfikacja AI (krok 2) – obowiązkowa przed utworzeniem zgłoszenia.
+   Po weryfikacji pojawia się sekcja z kategorią i priorytetem do ewentualnej
+   poprawy. Zmiana tematu lub opisu po weryfikacji wymaga ponownej weryfikacji.
+   --------------------------------------------------------------------- */
+
+// Stan weryfikacji: dla jakiej treści została wykonana
+const _ticketReview = { done: false, title: '', description: '' };
+
+const VERIFY_BTN_HTML = '<i class="ti ti-sparkles fs-2"></i><span>Weryfikuj z AI</span>';
+
+function _validateTicketStep1() {
+  const repEl   = document.getElementById('modal-ticket-reporter');
+  const titleEl = document.getElementById('modal-ticket-title');
+  const descEl  = document.getElementById('modal-ticket-description');
+
+  if (!repEl?.value) {
+    _showModalAlert('danger', 'Proszę wybrać osobę zgłaszającą.');
+    repEl?.focus();
+    return false;
+  }
+  if (!titleEl?.value.trim() || titleEl.value.trim().length < 3) {
+    _showModalAlert('danger', 'Temat zgłoszenia musi zawierać co najmniej 3 znaki.');
+    titleEl?.focus();
+    return false;
+  }
+  if (!descEl?.value.trim() || descEl.value.trim().length < 5) {
+    _showModalAlert('danger', 'Opis problemu musi zawierać co najmniej 5 znaków.');
+    descEl?.focus();
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Wysyła temat i opis do weryfikacji AI i pokazuje sekcję z kategorią i priorytetem
+ */
+async function verifyTicketWithAi() {
+  _clearModalAlert();
+  if (!_validateTicketStep1()) return;
+
+  const title       = document.getElementById('modal-ticket-title').value.trim();
+  const description = document.getElementById('modal-ticket-description').value.trim();
+  const verifyBtn   = document.getElementById('modal-ticket-verify-btn');
+
+  if (verifyBtn) {
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Weryfikuję…</span>';
+  }
+
+  try {
+    const { suggestion } = await API.triageTicket({ title, description });
+
+    // Użytkownik mógł zmienić treść w trakcie oczekiwania – wynik byłby nieaktualny
+    if (_currentTicketContentDiffers(title, description)) return;
+
+    const catEl = document.getElementById('modal-ticket-category');
+    const priEl = document.getElementById('modal-ticket-priority');
+    if (catEl) catEl.value = String(suggestion.category_id);
+    if (priEl) priEl.value = String(suggestion.priority_id);
+    updateModalPriorityPreview();
+
+    const confidenceLabel = { low: 'niska', medium: 'średnia', high: 'wysoka' }[suggestion.confidence] || suggestion.confidence;
+    _showReviewStep({ title, description }, 'info', `
+      <div class="fw-semibold mb-1">
+        Propozycja AI: ${escapeHtml(suggestion.category_name)} • ${escapeHtml(suggestion.priority_name)}
+        <span class="text-muted fw-normal">(pewność: ${escapeHtml(confidenceLabel)})</span>
+      </div>
+      <div class="small">${escapeHtml(suggestion.reasoning)}</div>
+      <div class="small text-muted mt-1">Sprawdź propozycję – w razie potrzeby popraw kategorię lub priorytet i utwórz zgłoszenie.</div>
+    `);
+  } catch (err) {
+    if (_currentTicketContentDiffers(title, description)) return;
+
+    // AI niedostępne – nie blokujemy zgłoszeń, użytkownik wybiera kategorię i priorytet ręcznie
+    const catEl = document.getElementById('modal-ticket-category');
+    if (catEl) catEl.value = '';
+    _showReviewStep({ title, description }, 'warning', `
+      <div class="fw-semibold mb-1">Weryfikacja AI nie powiodła się</div>
+      <div class="small">${escapeHtml(err.message || 'Nieznany błąd')}</div>
+      <div class="small mt-1">
+        Wybierz kategorię i priorytet ręcznie albo
+        <a href="#" onclick="event.preventDefault(); verifyTicketWithAi();">spróbuj ponownie</a>.
+      </div>
+    `);
+  } finally {
+    if (verifyBtn) {
+      verifyBtn.disabled = false;
+      verifyBtn.innerHTML = VERIFY_BTN_HTML;
+    }
+  }
+}
+
+function _currentTicketContentDiffers(title, description) {
+  return document.getElementById('modal-ticket-title')?.value.trim() !== title ||
+         document.getElementById('modal-ticket-description')?.value.trim() !== description;
+}
+
+function _showReviewStep({ title, description }, alertType, resultHtml) {
+  _ticketReview.done = true;
+  _ticketReview.title = title;
+  _ticketReview.description = description;
+
+  const resultEl = document.getElementById('modal-ticket-ai-result');
+  if (resultEl) {
+    resultEl.className = `alert alert-${alertType} mb-3`;
+    resultEl.innerHTML = resultHtml;
+  }
+  document.getElementById('modal-ticket-review')?.classList.remove('d-none');
+  document.getElementById('modal-ticket-verify-btn')?.classList.add('d-none');
+  document.getElementById('modal-ticket-submit-btn')?.classList.remove('d-none');
+}
+
+/**
+ * Powrót do kroku 1 – ukrywa sekcję weryfikacji i przycisk tworzenia zgłoszenia
+ */
+function _hideReviewStep() {
+  _ticketReview.done = false;
+  _ticketReview.title = '';
+  _ticketReview.description = '';
+
+  document.getElementById('modal-ticket-review')?.classList.add('d-none');
+  document.getElementById('modal-ticket-submit-btn')?.classList.add('d-none');
+  document.getElementById('modal-ticket-verify-btn')?.classList.remove('d-none');
+}
+
+/**
+ * Wywoływane przy edycji tematu lub opisu – zmiana treści unieważnia weryfikację
+ */
+function onTicketContentChanged() {
+  if (!_ticketReview.done) return;
+  if (_currentTicketContentDiffers(_ticketReview.title, _ticketReview.description)) {
+    _hideReviewStep();
+    _showModalAlert('info', 'Treść zgłoszenia została zmieniona – zweryfikuj ją ponownie z AI.');
+  }
+}
+
 function _resetModalFields() {
+  _hideReviewStep();
   ['modal-ticket-title', 'modal-ticket-description'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { suggestTriage, TriageError } = require('../services/triage.service');
 
 // Pobranie listy zgłoszeń (z możliwością filtrowania po statusie i priorytecie)
 async function getTickets(req, res, next) {
@@ -132,6 +133,28 @@ async function createTicket(req, res, next) {
   }
 }
 
+// Propozycja kategorii i priorytetu przez AI (triage) – nic nie zapisuje w bazie
+async function triageTicket(req, res, next) {
+  try {
+    const { title, description } = req.body;
+
+    if (typeof title !== 'string' || typeof description !== 'string' ||
+        title.trim().length < 3 || description.trim().length < 5) {
+      return res.status(400).json({
+        error: 'Do analizy AI potrzebny jest temat (min. 3 znaki) i opis (min. 5 znaków).',
+      });
+    }
+
+    const suggestion = await suggestTriage({ title: title.trim(), description: description.trim() });
+    res.json({ suggestion });
+  } catch (err) {
+    if (err instanceof TriageError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    next(err);
+  }
+}
+
 // Zmiana statusu zgłoszenia (z automatycznym ustawianiem resolved_at / closed_at)
 async function updateTicketStatus(req, res, next) {
   try {
@@ -236,6 +259,7 @@ module.exports = {
   getTicketStats,
   getTicketById,
   createTicket,
+  triageTicket,
   updateTicketStatus,
   updateTicketPriority,
   updateTicketAssignee,
