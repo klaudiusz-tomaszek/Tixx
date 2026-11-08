@@ -1,5 +1,6 @@
 const app = require('./src/app');
 const db = require('./src/config/db');
+const { ensureSessionTable } = require('./src/services/auth.service');
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,6 +11,11 @@ async function startServer() {
 
   if (dbStatus.connected) {
     console.log(`[Tixx] ✅ Połączono z bazą PostgreSQL: "${dbStatus.database}" (${dbStatus.version})`);
+    try {
+      await ensureSessionTable();
+    } catch (err) {
+      console.error('[Tixx] ❌ Nie udało się przygotować tabeli sesji (logowanie nie zadziała):', err.message);
+    }
   } else {
     console.warn(`[Tixx] ⚠️ Uwaga: Brak połączenia z bazą danych (${dbStatus.error}). Serwer wystartuje, ale zapytania do bazy zwrócą błąd.`);
   }

@@ -20,13 +20,39 @@ async function apiRequest(url, { method = 'GET', body } = {}) {
   const res = await fetch(url, options);
   const data = await res.json().catch(() => ({}));
 
+  // Brak lub wygaśnięcie sesji – przejście na stronę logowania z powrotem do bieżącego adresu
+  if (res.status === 401 && !url.startsWith('/api/auth/login') && window.location.pathname !== '/login') {
+    redirectToLogin();
+    return new Promise(() => {}); // strona i tak się przeładowuje – nie pokazujemy błędu
+  }
+
   if (!res.ok) {
     throw new Error(data.error || `Błąd serwera (HTTP ${res.status})`);
   }
   return data;
 }
 
+function redirectToLogin() {
+  const next = window.location.pathname + window.location.search;
+  window.location.replace(next && next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
+}
+
 const API = {
+
+  /** POST /api/auth/login */
+  login({ email, password, remember }) {
+    return apiRequest('/api/auth/login', { method: 'POST', body: { email, password, remember } });
+  },
+
+  /** POST /api/auth/logout */
+  logout() {
+    return apiRequest('/api/auth/logout', { method: 'POST' });
+  },
+
+  /** GET /api/auth/me – zalogowany użytkownik */
+  getCurrentUser() {
+    return apiRequest('/api/auth/me');
+  },
 
   /** GET /api/tickets?status=&priority=&limit= */
   getTickets({ status = '', priority = '', limit = 50 } = {}) {

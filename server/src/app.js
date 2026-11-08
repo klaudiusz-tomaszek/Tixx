@@ -23,6 +23,11 @@ app.use('/api', (req, res) => {
   });
 });
 
+// Strona logowania (osobny dokument, bez układu panelu)
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(clientDir, 'login.html'));
+});
+
 // Trasy aplikacji frontendowej SPA (HTML5 History API) + fallback dla pozostałych tras
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDir, 'index.html'));

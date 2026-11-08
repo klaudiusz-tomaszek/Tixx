@@ -10,6 +10,7 @@ BEGIN;
 -- 1. CZYSZCZENIE STRUKTURY
 -- ---------------------------------------------------------------------
 DROP VIEW IF EXISTS v_tickets_overview CASCADE;
+DROP TABLE IF EXISTS user_sessions CASCADE;
 DROP TABLE IF EXISTS ticket_attachments CASCADE;
 DROP TABLE IF EXISTS ticket_history CASCADE;
 DROP TABLE IF EXISTS ticket_comments CASCADE;
@@ -161,6 +162,16 @@ CREATE TABLE ticket_history (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sesje zalogowanych użytkowników (w bazie tylko skrót SHA-256 tokenu z ciasteczka).
+-- Serwer tworzy tę tabelę także przy starcie, jeśli baza powstała przed dodaniem logowania.
+CREATE TABLE user_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
 -- ---------------------------------------------------------------------
 -- 6. INDEKSY
 -- ---------------------------------------------------------------------
@@ -178,6 +189,7 @@ CREATE INDEX idx_tickets_created_at ON tickets(created_at DESC);
 
 CREATE INDEX idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
 CREATE INDEX idx_ticket_history_ticket_id ON ticket_history(ticket_id);
+CREATE INDEX idx_user_sessions_expires_at ON user_sessions(expires_at);
 
 -- ---------------------------------------------------------------------
 -- 7. WIDOK PRZEGLĄDU ZGŁOSZEŃ (VIEW)

@@ -8,13 +8,13 @@ BEGIN;
 
 -- Użytkownicy (Hasło testowe dla wszystkich: password123 / bcrypt)
 INSERT INTO users (id, role_id, department, first_name, last_name, email, password_hash, phone_number, office_room) VALUES
-(1, 1, 'IT i Infrastruktura', 'Jan', 'Kowalski', 'admin@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 501 100 200', 'Serwerownia / B-101'),
-(2, 2, 'IT i Infrastruktura', 'Tomasz', 'Zieliński', 't.zielinski@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 501 100 201', 'Helpdesk / B-102'),
-(3, 2, 'IT i Infrastruktura', 'Anna', 'Nowicka', 'a.nowicka@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 501 100 202', 'Helpdesk / B-102'),
-(4, 3, 'Księgowość i Finanse', 'Piotr', 'Wiśniewski', 'p.wisniewski@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 502 200 301', 'Biuro 204'),
-(5, 3, 'Human Resources', 'Magdalena', 'Dąbrowska', 'm.dabrowska@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 502 200 302', 'Biuro 310'),
-(6, 3, 'Marketing i Sprzedaż', 'Michał', 'Kozłowski', 'm.kozlowski@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 502 200 303', 'Open Space A'),
-(7, 3, 'Logistyka i Magazyn', 'Ewa', 'Wójcik', 'e.wojcik@tixx.local', '$2a$10$wK1Gq0c0rYjP5wLqJ9kOauF5q9o1p6eN.Fp5E4/rG3oKqK6G0c1u2', '+48 502 200 304', 'Magazyn Główny');
+(1, 1, 'IT i Infrastruktura', 'Jan', 'Kowalski', 'admin@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 501 100 200', 'Serwerownia / B-101'),
+(2, 2, 'IT i Infrastruktura', 'Tomasz', 'Zieliński', 't.zielinski@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 501 100 201', 'Helpdesk / B-102'),
+(3, 2, 'IT i Infrastruktura', 'Anna', 'Nowicka', 'a.nowicka@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 501 100 202', 'Helpdesk / B-102'),
+(4, 3, 'Księgowość i Finanse', 'Piotr', 'Wiśniewski', 'p.wisniewski@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 502 200 301', 'Biuro 204'),
+(5, 3, 'Human Resources', 'Magdalena', 'Dąbrowska', 'm.dabrowska@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 502 200 302', 'Biuro 310'),
+(6, 3, 'Marketing i Sprzedaż', 'Michał', 'Kozłowski', 'm.kozlowski@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 502 200 303', 'Open Space A'),
+(7, 3, 'Logistyka i Magazyn', 'Ewa', 'Wójcik', 'e.wojcik@tixx.local', '$2b$10$TTr/z0TUJ99k1aasbzMhHeb9pDOcNcG4T713FrJCJubzQezWPcBmW', '+48 502 200 304', 'Magazyn Główny');
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
 
 -- Zgłoszenia serwisowe (Tickets)

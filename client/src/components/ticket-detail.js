@@ -304,8 +304,7 @@ async function submitTicketComment() {
   try {
     await API.addComment(currentTicketId, {
       message,
-      is_internal,
-      author_id: 1, // Domyślny zalogowany użytkownik (Admin)
+      is_internal, // autorem jest zalogowany użytkownik (ustalany po stronie serwera)
     });
 
     textInput.value = '';
@@ -459,9 +458,13 @@ async function saveAssigneeChange() {
  */
 async function assignToMe() {
   const select = document.getElementById('td-assignee-select');
-  if (select) {
-    select.value = '1';
+  if (!select || !currentUser) return;
+  // Opcja może nie istnieć, jeśli zalogowany użytkownik nie jest technikiem IT
+  if (![...select.options].some(o => o.value === String(currentUser.id))) {
+    alert('Tylko członkowie zespołu IT mogą przypisywać zgłoszenia do siebie.');
+    return;
   }
+  select.value = String(currentUser.id);
   await saveAssigneeChange();
 }
 

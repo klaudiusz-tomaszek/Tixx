@@ -43,11 +43,21 @@
 
         <!-- Awatar mobilny -->
         <div class="navbar-nav flex-row d-lg-none">
-          <a href="#" class="nav-link p-0">
-            <span class="avatar avatar-sm"
-                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
-            </span>
-          </a>
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link p-0" data-bs-toggle="dropdown" aria-label="Menu użytkownika">
+              <span class="avatar avatar-sm bg-primary-lt text-primary fw-bold" data-current-user="initials"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end">
+              <div class="dropdown-header">
+                <div class="fw-semibold text-body" data-current-user="name"></div>
+                <div class="text-muted small" data-current-user="email"></div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();">
+                <i class="ti ti-logout me-2"></i>Wyloguj się
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Menu nawigacyjne -->
@@ -133,14 +143,25 @@
             </div>
           </div>
 
-          <!-- Profil użytkownika -->
-          <div class="d-flex align-items-center gap-2">
-            <span class="avatar avatar-sm"
-                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
-            </span>
-            <div class="d-none d-xl-block">
-              <div class="fw-semibold text-truncate" style="font-size:.8125rem;line-height:1.2;">Admin Tixx</div>
-              <div class="text-muted text-truncate" style="font-size:.7rem;">admin@tixx.local</div>
+          <!-- Profil zalogowanego użytkownika (uzupełniany przez App.js) -->
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link d-flex align-items-center gap-2 p-0" data-bs-toggle="dropdown" aria-label="Menu użytkownika">
+              <span class="avatar avatar-sm bg-primary-lt text-primary fw-bold" data-current-user="initials"></span>
+              <div class="d-none d-xl-block text-start">
+                <div class="fw-semibold text-truncate" style="font-size:.8125rem;line-height:1.2;" data-current-user="name">…</div>
+                <div class="text-muted text-truncate" style="font-size:.7rem;" data-current-user="email"></div>
+              </div>
+              <i class="ti ti-chevron-down text-muted d-none d-xl-inline"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <div class="dropdown-header">
+                <div class="fw-semibold text-body" data-current-user="name"></div>
+                <div class="text-muted small" data-current-user="role"></div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();">
+                <i class="ti ti-logout me-2"></i>Wyloguj się
+              </a>
             </div>
           </div>
         </div>
@@ -915,7 +936,8 @@
   <!-- ═══════════════════════════════════════════════════════════════
        SKRYPTY – kolejność ładowania
   ════════════════════════════════════════════════════════════════════ -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Tabler zawiera już Bootstrap JS – osobny bootstrap.bundle powodował podwójną obsługę
+       data-bs-toggle (dropdowny otwierały się i od razu zamykały) -->
   <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
 
   <!-- 1. Helpery i komunikacja z API -->
