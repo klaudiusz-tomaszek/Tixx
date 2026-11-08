@@ -1,77 +1,39 @@
 /* =====================================================================
    Tixx – views/ticket-detail.js
    Logika widoku podglądu szczegółów pojedynczego zgłoszenia (Ticket Detail).
-   Zależności: utils.js, api.js, app.js
+   Zależności: utils.js, api.js, App.js
    ===================================================================== */
 
 let currentTicketId = null;
-let cachedStatuses = [];
-let cachedPriorities = [];
-let cachedUsers = [];
 let currentAssigneeId = null;
 
+const ROLE_LABELS = { admin: 'Administrator', support: 'Wsparcie IT' };
+
 /**
- * Główna funkcja otwierająca widok podglądu zgłoszenia
- * @param {number|string} [id] - Opcjonalny identyfikator zgłoszenia
+ * Otwiera podgląd zgłoszenia (wywoływane przez router dla /tickets/:id)
  */
 async function viewTicket(id) {
-  let ticketId = parseInt(id, 10);
-  if (isNaN(ticketId)) {
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    const lastPart = parts[parts.length - 1];
-    ticketId = parseInt(lastPart, 10);
-  }
-  if (isNaN(ticketId)) {
-    const urlParams = new URLSearchParams(window.location.search);
-    ticketId = parseInt(urlParams.get('id'), 10);
-  }
+  const ticketId = parseInt(id, 10);
   if (isNaN(ticketId)) return;
-
   currentTicketId = ticketId;
-  if (window.location.pathname !== `/tickets/${ticketId}`) {
-    history.pushState(null, '', `/tickets/${ticketId}`);
-  }
-  if (typeof showView === 'function') {
-    showView('ticket-detail');
-  }
 
-  const loadingEl = document.getElementById('td-loading');
-  const errorEl   = document.getElementById('td-error');
-  const contentEl = document.getElementById('td-content');
-
-  loadingEl.classList.remove('d-none');
-  errorEl.classList.add('d-none');
-  contentEl.classList.add('d-none');
+  setVisible('td-loading', true);
+  setVisible('td-error', false);
+  setVisible('td-content', false);
 
   try {
-    // Równoległe pobranie szczegółów zgłoszenia i słowników statusów oraz priorytetów
-    const [ticketData, statusesData, prioritiesData] = await Promise.all([
-      API.getTicketById(ticketId),
-      cachedStatuses.length ? Promise.resolve(cachedStatuses) : API.getStatuses().catch(() => []),
-      cachedPriorities.length ? Promise.resolve(cachedPriorities) : API.getPriorities().catch(() => []),
-    ]);
-
-    if (!cachedStatuses.length && Array.isArray(statusesData)) {
-      cachedStatuses = statusesData;
-    }
-    if (!cachedPriorities.length && Array.isArray(prioritiesData)) {
-      cachedPriorities = prioritiesData;
-    }
-
-    renderTicketDetail(ticketData.ticket, ticketData.comments || []);
-    loadingEl.classList.add('d-none');
-    contentEl.classList.remove('d-none');
-
+    await _fetchAndRenderTicket(ticketId);
+    setVisible('td-content', true);
   } catch (err) {
-    loadingEl.classList.add('d-none');
-    errorEl.classList.remove('d-none');
-    document.getElementById('td-error-msg').textContent =
-      err.message || 'Wystąpił błąd podczas ładowania zgłoszenia.';
+    setVisible('td-error', true);
+    setTextById('td-error-msg', err.message || 'Wystąpił błąd podczas ładowania zgłoszenia.');
+  } finally {
+    setVisible('td-loading', false);
   }
 }
 
 /**
- * Odświeżenie aktualnie otwartego zgłoszenia
+ * Odświeżenie aktualnie otwartego zgłoszenia (przycisk „Odśwież”)
  */
 async function refreshTicketDetail() {
   if (currentTicketId) {
@@ -80,42 +42,56 @@ async function refreshTicketDetail() {
 }
 
 /**
+ * Pobiera zgłoszenie oraz słowniki statusów i priorytetów (do dropdownów) i renderuje widok.
+ * Brak słowników nie blokuje podglądu – dropdowny pokażą wtedy komunikat.
+ */
+async function _fetchAndRenderTicket(ticketId) {
+  const [data, statuses, priorities] = await Promise.all([
+    API.getTicketById(ticketId),
+    API.getStatuses().catch(() => []),
+    API.getPriorities().catch(() => []),
+  ]);
+  renderTicketDetail(data.ticket, data.comments || [], { statuses, priorities });
+}
+
+/**
+ * Wspólna ścieżka dla zmian zgłoszenia (status, priorytet, opiekun, komentarz):
+ * po zapisie przeładowuje widok i liczniki na dashboardzie.
+ */
+async function _reloadCurrentTicket() {
+  await _fetchAndRenderTicket(currentTicketId);
+  if (typeof loadRecentTickets === 'function') loadRecentTickets();
+}
+
+async function _applyTicketChange(saveChange, errorPrefix) {
+  if (!currentTicketId) return;
+  try {
+    await saveChange();
+    await _reloadCurrentTicket();
+  } catch (err) {
+    alert(`${errorPrefix}: ${err.message}`);
+  }
+}
+
+/**
  * Wyrenderowanie danych zgłoszenia i komentarzy w widoku
  */
-function renderTicketDetail(ticket, comments) {
-  // Aktualizacja breadcrumb
+function renderTicketDetail(ticket, comments, { statuses, priorities }) {
+  // Breadcrumb i nagłówek karty
   const breadcrumbLabel = document.getElementById('breadcrumb-current-label');
   if (breadcrumbLabel) {
     breadcrumbLabel.innerHTML = `<span class="font-monospace fw-bold">${escapeHtml(ticket.ticket_number)}</span>`;
   }
+  setTextById('td-card-number', ticket.ticket_number);
+  setTextById('td-body-title', ticket.title);
+  setTextById('td-description', ticket.description);
 
-  // Numer zgłoszenia w nagłówku karty (po prawej stronie)
-  const cardNumberEl = document.getElementById('td-card-number');
-  if (cardNumberEl) cardNumberEl.textContent = ticket.ticket_number;
-
-  // Tytuł i treść zgłoszenia w karcie głównej
-  const bodyTitleEl = document.getElementById('td-body-title');
-  if (bodyTitleEl) bodyTitleEl.textContent = ticket.title;
-
-  const descEl = document.getElementById('td-description');
-  if (descEl) descEl.textContent = ticket.description;
-
-  // Dane zgłaszającego i data w karcie głównej
-  const reporterAvatarEl = document.getElementById('td-reporter-avatar');
-  if (reporterAvatarEl) reporterAvatarEl.textContent = getInitials(ticket.reporter_name);
-
-  const reporterNameEl = document.getElementById('td-reporter-header-name');
-  if (reporterNameEl) reporterNameEl.textContent = ticket.reporter_name;
-
-  const reporterDeptEl = document.getElementById('td-reporter-dept-header');
-  if (reporterDeptEl) {
-    if (ticket.reporter_department) {
-      reporterDeptEl.textContent = ticket.reporter_department;
-      reporterDeptEl.classList.remove('d-none');
-    } else {
-      reporterDeptEl.classList.add('d-none');
-    }
-  }
+  // Zgłaszający i data utworzenia
+  setTextById('td-reporter-avatar', getInitials(ticket.reporter_name));
+  setTextById('td-reporter-header-name', ticket.reporter_name);
+  setTextById('td-reporter-dept-header', ticket.reporter_department || '');
+  setVisible('td-reporter-dept-header', Boolean(ticket.reporter_department));
+  setTextById('td-created-at-header', fmtDate(ticket.created_at));
 
   const reporterEmailEl = document.getElementById('td-reporter-email-header');
   if (reporterEmailEl) {
@@ -124,82 +100,47 @@ function renderTicketDetail(ticket, comments) {
       : '';
   }
 
-  const createdAtEl = document.getElementById('td-created-at-header');
-  if (createdAtEl) createdAtEl.textContent = fmtDate(ticket.created_at);
+  // SLA, status i priorytet
+  renderSLAProgress(ticket);
+  document.getElementById('td-status-badge').innerHTML = statusBadge(ticket.status_code, ticket.status_name);
+  document.getElementById('td-priority-badge').innerHTML = priorityBadge(ticket.priority_code, ticket.priority_name);
 
-  // SLA oraz Pasek boczny: Status, Priorytet
-  renderSLAProgress(ticket, comments);
+  _renderChangeDropdown('td-status-dropdown', statuses, ticket.status_code, {
+    emptyText: 'Brak dostępnych statusów',
+    onSelect: 'changeTicketStatus',
+    label: s => `<span>${escapeHtml(s.name)}</span>`,
+  });
+  _renderChangeDropdown('td-priority-dropdown', priorities, ticket.priority_code, {
+    emptyText: 'Brak dostępnych priorytetów',
+    onSelect: 'changeTicketPriority',
+    label: p => priorityBadge(p.code, p.name),
+  });
 
-  document.getElementById('td-status-badge').innerHTML =
-    statusBadge(ticket.status_code, ticket.status_name);
-
-  document.getElementById('td-priority-badge').innerHTML =
-    priorityBadge(ticket.priority_code, ticket.priority_name);
-
-  // Dropdowny zmiany statusu i priorytetu
-  renderStatusDropdown(ticket.status_code);
-  renderPriorityDropdown(ticket.priority_code);
-
-  // Opiekun zgłoszenia
-  const assigneeAvatar = document.getElementById('td-assignee-avatar');
-  const assigneeName   = document.getElementById('td-assignee-name');
-  const assigneeEmail  = document.getElementById('td-assignee-email');
-  const assigneeDept   = document.getElementById('td-assignee-dept');
-
-  currentAssigneeId = ticket.assignee_id || null;
-  toggleAssigneeEdit(false);
-
-  if (ticket.assignee_name) {
-    if (assigneeAvatar) {
-      assigneeAvatar.textContent = getInitials(ticket.assignee_name);
-      assigneeAvatar.className = 'avatar avatar-md rounded-circle bg-purple-lt text-purple fw-bold fs-3';
-    }
-    if (assigneeName) assigneeName.textContent = ticket.assignee_name;
-    if (assigneeEmail) {
-      assigneeEmail.innerHTML = ticket.assignee_email
-        ? `<a href="mailto:${escapeHtml(ticket.assignee_email)}" class="text-reset">${escapeHtml(ticket.assignee_email)}</a>`
-        : 'Brak adresu e-mail';
-    }
-    if (assigneeDept) {
-      assigneeDept.textContent = 'Dedykowany opiekun';
-      assigneeDept.className = 'badge bg-purple-lt mt-1 small';
-    }
-  } else {
-    if (assigneeAvatar) {
-      assigneeAvatar.innerHTML = '<i class="ti ti-user-off fs-3"></i>';
-      assigneeAvatar.className = 'avatar avatar-md rounded-circle bg-secondary-lt text-secondary';
-    }
-    if (assigneeName) assigneeName.innerHTML = '<span class="text-muted">Nieprzypisany</span>';
-    if (assigneeEmail) assigneeEmail.textContent = 'Oczekuje na przypisanie';
-    if (assigneeDept) {
-      assigneeDept.textContent = 'Brak opiekuna';
-      assigneeDept.className = 'badge bg-secondary-lt mt-1 small';
-    }
-  }
-
-  // Komentarze
+  _renderAssignee(ticket);
   renderCommentsList(comments);
 }
 
 /**
- * Renderowanie listy opcji zmiany statusu
+ * Lista opcji zmiany (statusu / priorytetu) z zaznaczeniem bieżącej wartości
+ * @param {string} onSelect – nazwa globalnej funkcji wywoływanej z id wybranej pozycji
  */
-function renderStatusDropdown(currentStatusCode) {
-  const dropdown = document.getElementById('td-status-dropdown');
+function _renderChangeDropdown(dropdownId, items, currentCode, { emptyText, onSelect, label }) {
+  const dropdown = document.getElementById(dropdownId);
   if (!dropdown) return;
 
-  if (!cachedStatuses.length) {
-    dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">Brak dostępnych statusów</span></li>';
+  if (!items.length) {
+    dropdown.innerHTML = `<li><span class="dropdown-item text-muted small">${escapeHtml(emptyText)}</span></li>`;
     return;
   }
 
-  dropdown.innerHTML = cachedStatuses.map(s => {
-    const isCurrent = s.code.toLowerCase() === (currentStatusCode || '').toLowerCase();
+  const current = String(currentCode || '').toLowerCase();
+  dropdown.innerHTML = items.map(item => {
+    const isCurrent = String(item.code || '').toLowerCase() === current;
     return `
       <li>
-        <a class="dropdown-item d-flex align-items-center justify-content-between ${isCurrent ? 'active' : ''}" 
-           href="#" onclick="event.preventDefault(); changeTicketStatus(${s.id});">
-          <span>${escapeHtml(s.name)}</span>
+        <a class="dropdown-item d-flex align-items-center justify-content-between ${isCurrent ? 'active' : ''}"
+           href="#" onclick="event.preventDefault(); ${onSelect}(${item.id});">
+          ${label(item)}
           ${isCurrent ? '<i class="ti ti-check ms-2"></i>' : ''}
         </a>
       </li>`;
@@ -207,30 +148,40 @@ function renderStatusDropdown(currentStatusCode) {
 }
 
 /**
- * Renderowanie listy opcji zmiany priorytetu
+ * Karta opiekuna zgłoszenia (przypisany / nieprzypisany)
  */
-function renderPriorityDropdown(currentPriorityCode) {
-  const dropdown = document.getElementById('td-priority-dropdown');
-  if (!dropdown) return;
+function _renderAssignee(ticket) {
+  currentAssigneeId = ticket.assignee_id || null;
+  toggleAssigneeEdit(false);
 
-  if (!cachedPriorities.length) {
-    dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">Brak dostępnych priorytetów</span></li>';
-    return;
+  const avatar = document.getElementById('td-assignee-avatar');
+  const nameEl = document.getElementById('td-assignee-name');
+  const emailEl = document.getElementById('td-assignee-email');
+  const deptEl = document.getElementById('td-assignee-dept');
+  const assigned = Boolean(ticket.assignee_name);
+
+  if (avatar) {
+    avatar.className = assigned
+      ? 'avatar avatar-md rounded-circle bg-purple-lt text-purple fw-bold fs-3'
+      : 'avatar avatar-md rounded-circle bg-secondary-lt text-secondary';
+    avatar.innerHTML = assigned ? escapeHtml(getInitials(ticket.assignee_name)) : '<i class="ti ti-user-off fs-3"></i>';
   }
-
-  dropdown.innerHTML = cachedPriorities.map(p => {
-    const isCurrent = (p.code || '').toLowerCase() === (currentPriorityCode || '').toLowerCase();
-    return `
-      <li>
-        <a class="dropdown-item d-flex align-items-center justify-content-between ${isCurrent ? 'active' : ''}" 
-           href="#" onclick="event.preventDefault(); changeTicketPriority(${p.id});">
-          <span class="d-flex align-items-center gap-2">
-            ${priorityBadge(p.code, p.name)}
-          </span>
-          ${isCurrent ? '<i class="ti ti-check ms-2"></i>' : ''}
-        </a>
-      </li>`;
-  }).join('');
+  if (nameEl) {
+    nameEl.innerHTML = assigned ? escapeHtml(ticket.assignee_name) : '<span class="text-muted">Nieprzypisany</span>';
+  }
+  if (emailEl) {
+    if (!assigned) {
+      emailEl.textContent = 'Oczekuje na przypisanie';
+    } else if (ticket.assignee_email) {
+      emailEl.innerHTML = `<a href="mailto:${escapeHtml(ticket.assignee_email)}" class="text-reset">${escapeHtml(ticket.assignee_email)}</a>`;
+    } else {
+      emailEl.textContent = 'Brak adresu e-mail';
+    }
+  }
+  if (deptEl) {
+    deptEl.textContent = assigned ? 'Dedykowany opiekun' : 'Brak opiekuna';
+    deptEl.className = `badge ${assigned ? 'bg-purple-lt' : 'bg-secondary-lt'} mt-1 small`;
+  }
 }
 
 /**
@@ -238,29 +189,19 @@ function renderPriorityDropdown(currentPriorityCode) {
  */
 function renderCommentsList(comments) {
   const container = document.getElementById('td-comments-list');
-  const emptyEl   = document.getElementById('td-no-comments');
-  const badgeEl   = document.getElementById('td-comments-badge');
+  setTextById('td-comments-badge', comments.length);
+  setVisible('td-no-comments', comments.length === 0);
 
-  badgeEl.textContent = comments.length;
-
-  if (!comments.length) {
-    container.innerHTML = '';
-    emptyEl.classList.remove('d-none');
-    return;
-  }
-
-  emptyEl.classList.add('d-none');
   container.innerHTML = comments.map(c => {
     const isInternal = Boolean(c.is_internal);
     const authorName = c.author_name || 'Użytkownik';
-    const authorInitials = getInitials(authorName);
 
     return `
       <div class="ticket-comment-card ${isInternal ? 'is-internal' : ''}">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <div class="d-flex align-items-center gap-2">
             <span class="avatar avatar-xs rounded-circle ${isInternal ? 'bg-warning-lt text-warning' : 'bg-primary-lt text-primary'}">
-              ${authorInitials}
+              ${escapeHtml(getInitials(authorName))}
             </span>
             <div>
               <span class="fw-semibold text-reset small">${escapeHtml(authorName)}</span>
@@ -269,9 +210,7 @@ function renderCommentsList(comments) {
           </div>
           <div class="d-flex align-items-center gap-2">
             ${isInternal ? '<span class="badge bg-warning-lt text-warning" title="Widoczne tylko dla pracowników wsparcia"><i class="ti ti-lock me-1"></i>Notatka wewnętrzna</span>' : ''}
-            <span class="text-muted small" title="${fmtDate(c.created_at)}">
-              <i class="ti ti-clock me-1"></i>${fmtDate(c.created_at)}
-            </span>
+            <span class="text-muted small"><i class="ti ti-clock me-1"></i>${fmtDate(c.created_at)}</span>
           </div>
         </div>
         <div class="ticket-comment-text text-secondary" style="white-space: pre-wrap; font-size: .9125rem; line-height: 1.55;">${escapeHtml(c.message)}</div>
@@ -280,193 +219,113 @@ function renderCommentsList(comments) {
 }
 
 /**
- * Wysłanie nowego komentarza
+ * Wysłanie nowego komentarza (autora ustala serwer na podstawie sesji)
  */
 async function submitTicketComment() {
   const textInput = document.getElementById('td-new-comment-text');
   const internalInput = document.getElementById('td-is-internal');
   const alertEl = document.getElementById('td-comment-alert');
-  const submitBtn = document.getElementById('td-comment-submit-btn');
 
   const message = textInput.value.trim();
-  const is_internal = internalInput.checked;
-
   if (!message) {
     alertEl.textContent = 'Wprowadź treść wiadomości przed wysłaniem.';
-    alertEl.classList.remove('d-none');
+    setVisible(alertEl, true);
     return;
   }
 
-  alertEl.classList.add('d-none');
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Wysyłanie…';
+  setVisible(alertEl, false);
+  const restoreButton = setButtonBusy(document.getElementById('td-comment-submit-btn'), 'Wysyłanie…');
 
   try {
-    await API.addComment(currentTicketId, {
-      message,
-      is_internal,
-      author_id: 1, // Domyślny zalogowany użytkownik (Admin)
-    });
-
+    await API.addComment(currentTicketId, { message, is_internal: internalInput.checked });
     textInput.value = '';
     internalInput.checked = false;
-
-    // Ponowne pobranie szczegółów zgłoszenia
-    const data = await API.getTicketById(currentTicketId);
-    renderTicketDetail(data.ticket, data.comments || []);
-
-    // Odśwież również liczniki w tabeli zgłoszeń i dashboardzie jeśli obecne
-    if (typeof loadRecentTickets === 'function') loadRecentTickets();
-
+    await _reloadCurrentTicket();
   } catch (err) {
     alertEl.textContent = err.message || 'Nie udało się dodać komentarza.';
-    alertEl.classList.remove('d-none');
+    setVisible(alertEl, true);
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="ti ti-send me-1"></i><span>Wyślij odpowiedź</span>';
+    restoreButton();
   }
 }
 
-/**
- * Zmiana statusu zgłoszenia
- */
-async function changeTicketStatus(statusId) {
-  if (!currentTicketId) return;
-
-  try {
-    const res = await API.updateTicketStatus(currentTicketId, statusId);
-    if (res.ticket) {
-      // Zaktualizuj widok
-      const data = await API.getTicketById(currentTicketId);
-      renderTicketDetail(data.ticket, data.comments || []);
-
-      // Odśwież dane na liście jeśli funkcja dostępna
-      if (typeof loadRecentTickets === 'function') loadRecentTickets();
-    }
-  } catch (err) {
-    alert('Błąd podczas zmiany statusu: ' + err.message);
-  }
+function changeTicketStatus(statusId) {
+  return _applyTicketChange(() => API.updateTicketStatus(currentTicketId, statusId), 'Błąd podczas zmiany statusu');
 }
 
-/**
- * Zmiana priorytetu zgłoszenia
- */
-async function changeTicketPriority(priorityId) {
-  if (!currentTicketId) return;
-
-  try {
-    const res = await API.updateTicketPriority(currentTicketId, priorityId);
-    if (res.ticket) {
-      // Zaktualizuj widok (w tym natychmiastowe przeliczenie SLA dla nowego priorytetu)
-      const data = await API.getTicketById(currentTicketId);
-      renderTicketDetail(data.ticket, data.comments || []);
-
-      // Odśwież dane na liście jeśli funkcja dostępna
-      if (typeof loadRecentTickets === 'function') loadRecentTickets();
-    }
-  } catch (err) {
-    alert('Błąd podczas zmiany priorytetu: ' + err.message);
-  }
+function changeTicketPriority(priorityId) {
+  return _applyTicketChange(() => API.updateTicketPriority(currentTicketId, priorityId), 'Błąd podczas zmiany priorytetu');
 }
 
-/**
- * Załadowanie użytkowników do selecta przypisania opiekuna
- */
+/* ---------------------------------------------------------------------
+   Opiekun zgłoszenia
+   --------------------------------------------------------------------- */
+
 async function populateAssigneeSelect(selectedId) {
   const select = document.getElementById('td-assignee-select');
   if (!select) return;
 
-  if (!cachedUsers.length) {
-    try {
-      const data = await API.getUsers();
-      cachedUsers = Array.isArray(data) ? data : (data.users || []);
-    } catch (e) {
-      console.error('Błąd pobierania użytkowników:', e);
-    }
-  }
-
-  let html = '<option value="">— Brak przypisania (usuń) —</option>';
-  cachedUsers.forEach(u => {
-    const fullName = `${u.first_name} ${u.last_name}`;
-    const roleDesc = u.role_name === 'admin' ? ' [Administrator]' : (u.role_name === 'support' ? ' [Wsparcie IT]' : '');
-    const deptDesc = u.department ? ` (${u.department})` : '';
-    html += `<option value="${u.id}">${escapeHtml(fullName + roleDesc + deptDesc)}</option>`;
+  const users = await API.getUsers().catch(err => {
+    console.error('Błąd pobierania użytkowników:', err);
+    return [];
   });
-  select.innerHTML = html;
+
+  fillSelect(select, users, {
+    placeholder: '— Brak przypisania (usuń) —',
+    label: u => {
+      const role = ROLE_LABELS[u.role_name] ? ` [${ROLE_LABELS[u.role_name]}]` : '';
+      const dept = u.department ? ` (${u.department})` : '';
+      return fullName(u) + role + dept;
+    },
+  });
   select.value = selectedId ? String(selectedId) : '';
 }
 
 /**
- * Przełączanie trybu edycji opiekuna
+ * Przełączanie trybu edycji opiekuna (bez argumentu – przełącza; true/false – wymusza stan)
  */
 function toggleAssigneeEdit(forceState) {
-  const displayEl = document.getElementById('td-assignee-display');
-  const formEl    = document.getElementById('td-assignee-form');
-  const toggleBtn = document.getElementById('td-btn-toggle-assignee');
-  if (!displayEl || !formEl) return;
+  const formEl = document.getElementById('td-assignee-form');
+  if (!formEl) return;
 
-  const isFormVisible = !formEl.classList.contains('d-none');
-  const willShowForm  = typeof forceState === 'boolean' ? forceState : !isFormVisible;
-
-  if (willShowForm) {
-    displayEl.classList.add('d-none');
-    formEl.classList.remove('d-none');
-    if (toggleBtn) toggleBtn.classList.add('d-none');
-    populateAssigneeSelect(currentAssigneeId);
-  } else {
-    formEl.classList.add('d-none');
-    displayEl.classList.remove('d-none');
-    if (toggleBtn) toggleBtn.classList.remove('d-none');
-  }
+  const showForm = typeof forceState === 'boolean' ? forceState : formEl.classList.contains('d-none');
+  setVisible(formEl, showForm);
+  setVisible('td-assignee-display', !showForm);
+  setVisible('td-btn-toggle-assignee', !showForm);
+  if (showForm) populateAssigneeSelect(currentAssigneeId);
 }
 
-/**
- * Zapisanie zmiany opiekuna zgłoszenia
- */
 async function saveAssigneeChange() {
-  if (!currentTicketId) return;
-  const select = document.getElementById('td-assignee-select');
-  const saveBtn = document.getElementById('td-btn-save-assignee');
-  const selectedVal = select ? select.value : '';
+  const selectedVal = document.getElementById('td-assignee-select')?.value || '';
   const newAssigneeId = selectedVal ? parseInt(selectedVal, 10) : null;
+  const restoreButton = setButtonBusy(document.getElementById('td-btn-save-assignee'), 'Zapisywanie…');
 
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Zapisywanie…';
-  }
-
-  try {
-    const res = await API.updateTicketAssignee(currentTicketId, newAssigneeId);
-    if (res.ticket) {
-      currentAssigneeId = res.ticket.assignee_id || null;
-      const data = await API.getTicketById(currentTicketId);
-      renderTicketDetail(data.ticket, data.comments || []);
-      if (typeof loadRecentTickets === 'function') loadRecentTickets();
-    }
-  } catch (err) {
-    alert('Błąd podczas zmiany opiekuna: ' + err.message);
-  } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = '<i class="ti ti-check me-1"></i><span>Zapisz</span>';
-    }
-    toggleAssigneeEdit(false);
-  }
+  await _applyTicketChange(() => API.updateTicketAssignee(currentTicketId, newAssigneeId), 'Błąd podczas zmiany opiekuna');
+  restoreButton();
+  toggleAssigneeEdit(false);
 }
 
 /**
- * Szybkie przypisanie zgłoszenia do aktualnego administratora (ID: 1)
+ * Szybkie przypisanie zgłoszenia do zalogowanego użytkownika
  */
 async function assignToMe() {
   const select = document.getElementById('td-assignee-select');
-  if (select) {
-    select.value = '1';
+  if (!select || !currentUser) return;
+  // Opcja może nie istnieć, jeśli zalogowany użytkownik nie jest technikiem IT
+  if (![...select.options].some(o => o.value === String(currentUser.id))) {
+    alert('Tylko członkowie zespołu IT mogą przypisywać zgłoszenia do siebie.');
+    return;
   }
+  select.value = String(currentUser.id);
   await saveAssigneeChange();
 }
 
+/* ---------------------------------------------------------------------
+   SLA – czas podjęcia i czas rozwiązania
+   --------------------------------------------------------------------- */
+
 /**
- * Formatowanie czasu trwania na czytelną reprezentację (np. 45 min, 2h 15 min)
+ * Formatowanie czasu trwania (np. 45 min, 2h, 2h 15 min)
  */
 function formatSlaDuration(ms) {
   if (ms <= 0) return '0 min';
@@ -479,188 +338,114 @@ function formatSlaDuration(ms) {
 }
 
 /**
- * Renderowanie pasków postępu SLA i statusów SLA
+ * Renderuje jeden licznik SLA (pasek, badge, opis) i zwraca jego stan:
+ * 'met' | 'breached' (zakończony), 'running' | 'warning' | 'overdue' (w toku).
+ *
+ * @param {string} kind – 'response' albo 'resolution' (część id elementów td-sla-<kind>-…)
+ * @param {object} cfg
+ *   limitHours    – limit SLA w godzinach
+ *   startMs       – początek odliczania (utworzenie zgłoszenia)
+ *   doneAtMs      – moment zakończenia albo null, gdy nadal trwa
+ *   doneLabel     – opis czasu dla zakończonego licznika (np. „Podjęto po”)
+ *   warnAtPercent – od ilu procent limitu pokazujemy ostrzeżenie
+ *   warning       – { icon, label } dla stanu ostrzeżenia
+ *   runningIcon   – ikona stanu „W toku”
  */
-function renderSLAProgress(ticket, comments) {
-  // Czasy SLA (w godzinach) pochodzą ze słownika priorytetów w bazie (v_tickets_overview)
-  const responseHours = Number(ticket.sla_response_hours);
-  const resolutionHours = Number(ticket.sla_resolution_hours);
+function _renderSlaTimer(kind, { limitHours, startMs, doneAtMs, doneLabel, warnAtPercent, warning, runningIcon }) {
+  const limitMs = limitHours * 3600 * 1000;
+  let state, barPercent, elapsedText;
 
-  const createdTime = new Date(ticket.created_at).getTime();
-  const now = Date.now();
-
-  // Elementy DOM
-  const headerBadgeEl = document.getElementById('td-sla-badge');
-  const respBarEl = document.getElementById('td-sla-response-bar');
-  const respStatusEl = document.getElementById('td-sla-response-status');
-  const respElapsedEl = document.getElementById('td-sla-response-elapsed');
-  const respLimitEl = document.getElementById('td-sla-response-limit');
-
-  const resBarEl = document.getElementById('td-sla-resolution-bar');
-  const resStatusEl = document.getElementById('td-sla-resolution-status');
-  const resElapsedEl = document.getElementById('td-sla-resolution-elapsed');
-  const resLimitEl = document.getElementById('td-sla-resolution-limit');
-
-  let isResponseBreached = false;
-  let isResponseWarning = false;
-  let isResolutionBreached = false;
-  let isResolutionWarning = false;
-
-  // --- 1. CZAS PODJĘCIA (RESPONSE SLA) ---
-  const responseLimitMs = responseHours * 3600 * 1000;
-  if (respLimitEl) respLimitEl.textContent = `Limit: ${responseHours}h`;
-
-  // Zgłoszenie jest podjęte, gdy serwer zapisał moment pierwszej reakcji
-  // (pierwsza zmiana statusu z NEW lub pierwsze przypisanie opiekuna) – nie zmienia się przy późniejszych edycjach
-  const isPickedUp = Boolean(ticket.first_response_at);
-
-  if (isPickedUp) {
-    const pickupTime = new Date(ticket.first_response_at).getTime();
-    const duration = Math.max(0, pickupTime - createdTime);
-    const met = duration <= responseLimitMs;
-
-    if (respBarEl) {
-      respBarEl.style.width = '100%';
-      respBarEl.className = met ? 'progress-bar bg-success' : 'progress-bar bg-danger';
-    }
-    if (respStatusEl) {
-      respStatusEl.className = met ? 'badge bg-success-lt text-success' : 'badge bg-danger-lt text-danger';
-      respStatusEl.innerHTML = met ? '<i class="ti ti-check me-1"></i>Dotrzymane' : '<i class="ti ti-alert-triangle me-1"></i>Przekroczone';
-    }
-    if (respElapsedEl) {
-      respElapsedEl.textContent = `Podjęto po: ${formatSlaDuration(duration)}`;
-    }
-    if (!met) isResponseBreached = true;
+  if (doneAtMs !== null) {
+    const duration = Math.max(0, doneAtMs - startMs);
+    state = duration <= limitMs ? 'met' : 'breached';
+    barPercent = 100;
+    elapsedText = `${doneLabel}: ${formatSlaDuration(duration)}`;
   } else {
-    // Nadal oczekuje na podjęcie
-    const elapsed = Math.max(0, now - createdTime);
-    const remaining = responseLimitMs - elapsed;
-    const percent = Math.min(100, Math.round((elapsed / responseLimitMs) * 100));
-
-    if (elapsed <= responseLimitMs) {
-      if (percent >= 75) {
-        isResponseWarning = true;
-        if (respBarEl) {
-          respBarEl.style.width = `${percent}%`;
-          respBarEl.className = 'progress-bar bg-warning';
-        }
-        if (respStatusEl) {
-          respStatusEl.className = 'badge bg-warning-lt text-warning';
-          respStatusEl.innerHTML = '<i class="ti ti-clock-pause me-1"></i>Kończy się czas';
-        }
-      } else {
-        if (respBarEl) {
-          respBarEl.style.width = `${Math.max(5, percent)}%`;
-          respBarEl.className = 'progress-bar bg-primary';
-        }
-        if (respStatusEl) {
-          respStatusEl.className = 'badge bg-primary-lt text-primary';
-          respStatusEl.innerHTML = '<i class="ti ti-clock-play me-1"></i>W toku';
-        }
-      }
-      if (respElapsedEl) {
-        respElapsedEl.textContent = `Pozostało: ${formatSlaDuration(remaining)}`;
-      }
+    const elapsed = Math.max(0, Date.now() - startMs);
+    const percent = Math.min(100, Math.round((elapsed / limitMs) * 100));
+    if (elapsed > limitMs) {
+      state = 'overdue';
+      barPercent = 100;
+      elapsedText = `Po terminie o: ${formatSlaDuration(elapsed - limitMs)}`;
     } else {
-      isResponseBreached = true;
-      if (respBarEl) {
-        respBarEl.style.width = '100%';
-        respBarEl.className = 'progress-bar bg-danger';
-      }
-      if (respStatusEl) {
-        respStatusEl.className = 'badge bg-danger-lt text-danger';
-        respStatusEl.innerHTML = '<i class="ti ti-alert-circle me-1"></i>Przekroczone';
-      }
-      if (respElapsedEl) {
-        respElapsedEl.textContent = `Po terminie o: ${formatSlaDuration(elapsed - responseLimitMs)}`;
-      }
+      state = percent >= warnAtPercent ? 'warning' : 'running';
+      barPercent = state === 'warning' ? percent : Math.max(5, percent); // min. 5%, żeby pasek był widoczny
+      elapsedText = `Pozostało: ${formatSlaDuration(limitMs - elapsed)}`;
     }
   }
 
-  // --- 2. CZAS ROZWIĄZANIA (RESOLUTION SLA) ---
-  const resolutionLimitMs = resolutionHours * 3600 * 1000;
-  if (resLimitEl) resLimitEl.textContent = `Limit: ${resolutionHours}h`;
+  const look = {
+    met:      { color: 'success', icon: 'ti-check',          label: 'Dotrzymane' },
+    breached: { color: 'danger',  icon: 'ti-alert-triangle', label: 'Przekroczone' },
+    overdue:  { color: 'danger',  icon: 'ti-alert-circle',   label: 'Przekroczone' },
+    warning:  { color: 'warning', ...warning },
+    running:  { color: 'primary', icon: runningIcon,         label: 'W toku' },
+  }[state];
 
-  const isResolved = Boolean(ticket.is_closed || ticket.resolved_at || ['RESOLVED', 'CLOSED', 'REJECTED'].includes((ticket.status_code || '').toUpperCase()));
-
-  if (isResolved) {
-    const resolvedTime = new Date(ticket.resolved_at || ticket.closed_at || ticket.updated_at || ticket.created_at).getTime();
-    const duration = Math.max(0, resolvedTime - createdTime);
-    const met = duration <= resolutionLimitMs;
-
-    if (resBarEl) {
-      resBarEl.style.width = '100%';
-      resBarEl.className = met ? 'progress-bar bg-success' : 'progress-bar bg-danger';
-    }
-    if (resStatusEl) {
-      resStatusEl.className = met ? 'badge bg-success-lt text-success' : 'badge bg-danger-lt text-danger';
-      resStatusEl.innerHTML = met ? '<i class="ti ti-check me-1"></i>Dotrzymane' : '<i class="ti ti-alert-triangle me-1"></i>Przekroczone';
-    }
-    if (resElapsedEl) {
-      resElapsedEl.textContent = `Rozwiązano w: ${formatSlaDuration(duration)}`;
-    }
-    if (!met) isResolutionBreached = true;
-  } else {
-    // Nadal otwarte
-    const elapsed = Math.max(0, now - createdTime);
-    const remaining = resolutionLimitMs - elapsed;
-    const percent = Math.min(100, Math.round((elapsed / resolutionLimitMs) * 100));
-
-    if (elapsed <= resolutionLimitMs) {
-      if (percent >= 80) {
-        isResolutionWarning = true;
-        if (resBarEl) {
-          resBarEl.style.width = `${percent}%`;
-          resBarEl.className = 'progress-bar bg-warning';
-        }
-        if (resStatusEl) {
-          resStatusEl.className = 'badge bg-warning-lt text-warning';
-          resStatusEl.innerHTML = '<i class="ti ti-alert-triangle me-1"></i>Zagrożone';
-        }
-      } else {
-        if (resBarEl) {
-          resBarEl.style.width = `${Math.max(5, percent)}%`;
-          resBarEl.className = 'progress-bar bg-primary';
-        }
-        if (resStatusEl) {
-          resStatusEl.className = 'badge bg-primary-lt text-primary';
-          resStatusEl.innerHTML = '<i class="ti ti-clock me-1"></i>W toku';
-        }
-      }
-      if (resElapsedEl) {
-        resElapsedEl.textContent = `Pozostało: ${formatSlaDuration(remaining)}`;
-      }
-    } else {
-      isResolutionBreached = true;
-      if (resBarEl) {
-        resBarEl.style.width = '100%';
-        resBarEl.className = 'progress-bar bg-danger';
-      }
-      if (resStatusEl) {
-        resStatusEl.className = 'badge bg-danger-lt text-danger';
-        resStatusEl.innerHTML = '<i class="ti ti-alert-circle me-1"></i>Przekroczone';
-      }
-      if (resElapsedEl) {
-        resElapsedEl.textContent = `Po terminie o: ${formatSlaDuration(elapsed - resolutionLimitMs)}`;
-      }
-    }
+  const barEl = document.getElementById(`td-sla-${kind}-bar`);
+  if (barEl) {
+    barEl.style.width = `${barPercent}%`;
+    barEl.className = `progress-bar bg-${look.color}`;
   }
-
-  // --- 3. BADGE GŁÓWNY NAGŁÓWKA SLA ---
-  if (headerBadgeEl) {
-    if (isResponseBreached || isResolutionBreached) {
-      headerBadgeEl.className = 'badge bg-danger-lt text-danger';
-      headerBadgeEl.innerHTML = '<i class="ti ti-alert-triangle me-1"></i>SLA Przekroczone';
-    } else if (isResolved && isPickedUp) {
-      headerBadgeEl.className = 'badge bg-success-lt text-success';
-      headerBadgeEl.innerHTML = '<i class="ti ti-check me-1"></i>SLA Dotrzymane';
-    } else if (isResponseWarning || isResolutionWarning) {
-      headerBadgeEl.className = 'badge bg-warning-lt text-warning';
-      headerBadgeEl.innerHTML = '<i class="ti ti-clock-pause me-1"></i>SLA Zagrożone';
-    } else {
-      headerBadgeEl.className = 'badge bg-blue-lt text-blue';
-      headerBadgeEl.innerHTML = '<i class="ti ti-activity me-1"></i>SLA Aktywne';
-    }
+  const statusEl = document.getElementById(`td-sla-${kind}-status`);
+  if (statusEl) {
+    statusEl.className = `badge bg-${look.color}-lt text-${look.color}`;
+    statusEl.innerHTML = `<i class="ti ${look.icon} me-1"></i>${look.label}`;
   }
+  setTextById(`td-sla-${kind}-elapsed`, elapsedText);
+  setTextById(`td-sla-${kind}-limit`, `Limit: ${limitHours}h`);
+
+  return state;
 }
 
+/**
+ * Paski SLA i zbiorczy badge w nagłówku.
+ * Limity (w godzinach) pochodzą ze słownika priorytetów w bazie (v_tickets_overview).
+ */
+function renderSLAProgress(ticket) {
+  const startMs = new Date(ticket.created_at).getTime();
+
+  // Podjęcie = moment pierwszej reakcji zapisany przez serwer
+  // (pierwsza zmiana statusu z NEW lub pierwsze przypisanie opiekuna)
+  const responseState = _renderSlaTimer('response', {
+    limitHours: Number(ticket.sla_response_hours),
+    startMs,
+    doneAtMs: ticket.first_response_at ? new Date(ticket.first_response_at).getTime() : null,
+    doneLabel: 'Podjęto po',
+    warnAtPercent: 75,
+    warning: { icon: 'ti-clock-pause', label: 'Kończy się czas' },
+    runningIcon: 'ti-clock-play',
+  });
+
+  const isResolved = Boolean(ticket.is_closed || ticket.resolved_at ||
+    ['RESOLVED', 'CLOSED', 'REJECTED'].includes(String(ticket.status_code || '').toUpperCase()));
+  const resolvedAt = ticket.resolved_at || ticket.closed_at || ticket.updated_at || ticket.created_at;
+
+  const resolutionState = _renderSlaTimer('resolution', {
+    limitHours: Number(ticket.sla_resolution_hours),
+    startMs,
+    doneAtMs: isResolved ? new Date(resolvedAt).getTime() : null,
+    doneLabel: 'Rozwiązano w',
+    warnAtPercent: 80,
+    warning: { icon: 'ti-alert-triangle', label: 'Zagrożone' },
+    runningIcon: 'ti-clock',
+  });
+
+  const states = [responseState, resolutionState];
+  let header;
+  if (states.some(s => s === 'breached' || s === 'overdue')) {
+    header = { color: 'danger', icon: 'ti-alert-triangle', label: 'SLA Przekroczone' };
+  } else if (states.every(s => s === 'met')) {
+    header = { color: 'success', icon: 'ti-check', label: 'SLA Dotrzymane' };
+  } else if (states.includes('warning')) {
+    header = { color: 'warning', icon: 'ti-clock-pause', label: 'SLA Zagrożone' };
+  } else {
+    header = { color: 'blue', icon: 'ti-activity', label: 'SLA Aktywne' };
+  }
+
+  const headerBadgeEl = document.getElementById('td-sla-badge');
+  if (headerBadgeEl) {
+    headerBadgeEl.className = `badge bg-${header.color}-lt text-${header.color}`;
+    headerBadgeEl.innerHTML = `<i class="ti ${header.icon} me-1"></i>${header.label}`;
+  }
+}

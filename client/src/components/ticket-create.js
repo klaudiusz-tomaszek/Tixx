@@ -1,12 +1,8 @@
 /* =====================================================================
    Tixx – views/ticket-create.js
-   Logika tworzenia nowego zgłoszenia w oknie modalnym (nakładka overlay).
+   Logika tworzenia nowego zgłoszenia w oknie modalnym.
    Zależności: utils.js, api.js, App.js
    ===================================================================== */
-
-let cachedCreateCategories = [];
-let cachedCreatePriorities = [];
-let cachedCreateUsers = [];
 
 const PRIORITY_DESCRIPTIONS = {
   critical: 'Awaria krytyczna – całkowity brak możliwości pracy lub przestój.',
@@ -15,245 +11,98 @@ const PRIORITY_DESCRIPTIONS = {
   low:      'Niski priorytet – drobna usterka lub prośba o zmianę.',
 };
 
+const DEFAULT_PRIORITY_CODE = 'MEDIUM';
+
+// Użytkownicy z listy „Osoba zgłaszająca” – potrzebni do podglądu wybranej osoby
+let reporterOptions = [];
+
+function _createModal() {
+  const modalEl = document.getElementById('modal-ticket-create');
+  return modalEl ? window.tabler.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+}
+
 /**
  * Otwiera modal tworzenia nowego zgłoszenia i ładuje słowniki
  */
 async function openTicketCreateModal() {
   _clearModalAlert();
+  _createModal()?.show();
 
-  const modalEl = document.getElementById('modal-ticket-create');
-  if (!modalEl) {
-    console.error('Nie znaleziono modalu #modal-ticket-create w drzewie DOM.');
-    return;
-  }
-
-  // 1. Otwarcie modalu (Bootstrap API z fallbackiem na natywny DOM)
-  let opened = false;
-  const bs = window.bootstrap || window.tabler?.bootstrap;
-  if (bs && bs.Modal) {
-    try {
-      const bsModal = bs.Modal.getOrCreateInstance(modalEl);
-      bsModal.show();
-      opened = true;
-    } catch (e) {
-      console.warn('Bootstrap Modal błąd:', e);
-    }
-  }
-
-  if (!opened) {
-    _openModalFallback(modalEl);
-  }
-
-  // 2. Reset stanu przycisku zatwierdzania
-  const submitBtn = document.getElementById('modal-ticket-submit-btn');
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="ti ti-check fs-2 me-1"></i><span>Utwórz zgłoszenie</span>';
-  }
-
-  // 3. Pobierz słowniki (kategorie, priorytety, użytkownicy)
   try {
-    const [catData, priData, usersData] = await Promise.all([
-      cachedCreateCategories.length ? Promise.resolve(cachedCreateCategories) : API.getCategories().catch(() => []),
-      cachedCreatePriorities.length ? Promise.resolve(cachedCreatePriorities) : API.getPriorities().catch(() => []),
-      cachedCreateUsers.length ? Promise.resolve(cachedCreateUsers) : API.getUsers().catch(() => []),
+    const [categories, priorities, users] = await Promise.all([
+      API.getCategories(),
+      API.getPriorities(),
+      API.getUsers(),
     ]);
-
-    if (Array.isArray(catData)) cachedCreateCategories = catData;
-    if (Array.isArray(priData)) cachedCreatePriorities = priData;
-    if (Array.isArray(usersData)) cachedCreateUsers = usersData;
-
-    _populateModalCategories(cachedCreateCategories);
-    _populateModalPriorities(cachedCreatePriorities);
-    _populateModalUsers(cachedCreateUsers);
-
+    reporterOptions = users;
+    _populateModalSelects(categories, priorities, users);
   } catch (err) {
     _showModalAlert('danger', 'Nie udało się załadować danych słownikowych: ' + err.message);
   }
 
-  // 4. Ustaw focus na polu tematu
-  setTimeout(() => {
-    document.getElementById('modal-ticket-title')?.focus();
-  }, 250);
+  setTimeout(() => document.getElementById('modal-ticket-title')?.focus(), 250);
 }
 
-/**
- * Zamyka modal tworzenia zgłoszenia
- */
 function closeTicketCreateModal() {
-  const modalEl = document.getElementById('modal-ticket-create');
-  if (!modalEl) return;
-
-  const bs = window.bootstrap || window.tabler?.bootstrap;
-  if (bs && bs.Modal) {
-    try {
-      const inst = bs.Modal.getInstance(modalEl);
-      if (inst) {
-        inst.hide();
-      }
-    } catch (_) {}
-  }
-
-  _closeModalFallback(modalEl);
-}
-
-// Fallback natywny do wyświetlania modalu
-function _openModalFallback(modalEl) {
-  modalEl.classList.add('show');
-  modalEl.style.display = 'block';
-  modalEl.removeAttribute('aria-hidden');
-  modalEl.setAttribute('aria-modal', 'true');
-  document.body.classList.add('modal-open');
-
-  let backdrop = document.getElementById('modal-ticket-create-backdrop');
-  if (!backdrop) {
-    backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop fade show';
-    backdrop.id = 'modal-ticket-create-backdrop';
-    backdrop.onclick = closeTicketCreateModal;
-    document.body.appendChild(backdrop);
-  }
-
-  const onEsc = (e) => {
-    if (e.key === 'Escape') {
-      closeTicketCreateModal();
-      document.removeEventListener('keydown', onEsc);
-    }
-  };
-  document.addEventListener('keydown', onEsc);
-}
-
-// Fallback natywny do ukrywania modalu
-function _closeModalFallback(modalEl) {
-  modalEl.classList.remove('show');
-  modalEl.style.display = 'none';
-  modalEl.setAttribute('aria-hidden', 'true');
-  modalEl.removeAttribute('aria-modal');
-  document.body.classList.remove('modal-open');
-  document.body.style.removeProperty('overflow');
-  document.body.style.removeProperty('padding-right');
-
-  const backdrop = document.getElementById('modal-ticket-create-backdrop');
-  if (backdrop) backdrop.remove();
-  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  _createModal()?.hide();
 }
 
 /**
- * Wypełnienie selecta kategorii w modalu
+ * Wypełnienie list wyboru w modalu. Bieżący wybór jest zachowywany;
+ * domyślnie priorytet „Średni” i zalogowany użytkownik jako zgłaszający.
  */
-function _populateModalCategories(categories) {
-  const select = document.getElementById('modal-ticket-category');
-  if (!select) return;
+function _populateModalSelects(categories, priorities, users) {
+  fillSelect('modal-ticket-category', categories, { placeholder: '— Wybierz kategorię —' });
 
-  const currentVal = select.value;
-  select.innerHTML = '<option value="">— Wybierz kategorię —</option>' +
-    categories.map(c => `
-      <option value="${c.id}" ${currentVal == c.id ? 'selected' : ''}>
-        ${escapeHtml(c.name)}
-      </option>
-    `).join('');
-}
-
-/**
- * Wypełnienie selecta priorytetów w modalu
- */
-function _populateModalPriorities(priorities) {
-  const select = document.getElementById('modal-ticket-priority');
-  if (!select) return;
-
-  const currentVal = select.value;
-  select.innerHTML = '<option value="">— Wybierz priorytet —</option>' +
-    priorities.map(p => {
-      const isDefault = !currentVal && (p.code === 'MEDIUM' || p.code === 'medium' || p.name.toLowerCase().includes('średni'));
-      return `
-        <option value="${p.id}" data-code="${escapeHtml(p.code)}" ${currentVal == p.id || isDefault ? 'selected' : ''}>
-          ${escapeHtml(p.name)}
-        </option>
-      `;
-    }).join('');
-
+  const priorityEl = document.getElementById('modal-ticket-priority');
+  fillSelect(priorityEl, priorities, {
+    placeholder: '— Wybierz priorytet —',
+    attrs: p => `data-code="${escapeHtml(p.code)}"`,
+  });
+  if (priorityEl && !priorityEl.value) {
+    priorityEl.value = String(priorities.find(p => p.code === DEFAULT_PRIORITY_CODE)?.id || '');
+  }
   updateModalPriorityPreview();
-}
 
-/**
- * Wypełnienie selecta użytkowników w modalu
- */
-function _populateModalUsers(users) {
-  const select = document.getElementById('modal-ticket-reporter');
-  if (!select) return;
-
-  const currentVal = select.value;
-  select.innerHTML = '<option value="">— Wybierz osobę zgłaszającą —</option>' +
-    users.map(u => {
-      const dept = u.department ? ` • ${u.department}` : '';
-      return `
-        <option value="${u.id}" ${currentVal == u.id ? 'selected' : ''}>
-          ${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)} (${escapeHtml(u.email)}${escapeHtml(dept)})
-        </option>
-      `;
-    }).join('');
-
-  if (!select.value && users.length > 0) {
-    const adminUser = users.find(u => u.id === 1);
-    select.value = adminUser ? adminUser.id : users[0].id;
+  const reporterEl = document.getElementById('modal-ticket-reporter');
+  fillSelect(reporterEl, users, {
+    placeholder: '— Wybierz osobę zgłaszającą —',
+    label: u => `${fullName(u)} (${u.email}${u.department ? ` • ${u.department}` : ''})`,
+  });
+  if (reporterEl && !reporterEl.value && users.length) {
+    const defaultReporter = users.find(u => u.id === currentUser?.id) || users[0];
+    reporterEl.value = String(defaultReporter.id);
   }
-
   updateModalReporterPreview();
 }
 
 /**
- * Aktualizacja podglądu priorytetu w modalu
+ * Opis wybranego priorytetu pod polem wyboru
  */
 function updateModalPriorityPreview() {
   const select = document.getElementById('modal-ticket-priority');
-  const previewBadge = document.getElementById('modal-priority-preview-badge');
-  const descEl = document.getElementById('modal-priority-preview-desc');
-  if (!select || !previewBadge) return;
-
-  const selectedOpt = select.options[select.selectedIndex];
-  if (!selectedOpt || !selectedOpt.value) {
-    previewBadge.innerHTML = '<span class="badge bg-secondary-lt">Brak</span>';
-    if (descEl) descEl.textContent = '';
-    return;
-  }
-
-  const priCode = (selectedOpt.getAttribute('data-code') || '').toLowerCase();
-  const priName = selectedOpt.textContent.trim();
-
-  previewBadge.innerHTML = priorityBadge(priCode, priName);
-  if (descEl) {
-    descEl.textContent = PRIORITY_DESCRIPTIONS[priCode] || '';
-  }
+  const selectedOpt = select?.options[select.selectedIndex];
+  const priCode = (selectedOpt?.value && selectedOpt.getAttribute('data-code') || '').toLowerCase();
+  setTextById('modal-priority-preview-desc', PRIORITY_DESCRIPTIONS[priCode] || '');
 }
 
 /**
- * Aktualizacja podglądu zgłaszającego w modalu
+ * Podgląd wybranej osoby zgłaszającej (inicjały, e-mail, dział i pokój)
  */
 function updateModalReporterPreview() {
-  const select = document.getElementById('modal-ticket-reporter');
-  const card = document.getElementById('modal-reporter-card');
-  if (!select || !card) return;
+  const selectedId = parseInt(document.getElementById('modal-ticket-reporter')?.value, 10);
+  const user = reporterOptions.find(u => u.id === selectedId);
 
-  const selectedId = parseInt(select.value, 10);
-  const user = cachedCreateUsers.find(u => u.id === selectedId);
+  setVisible('modal-reporter-card', Boolean(user));
+  if (!user) return;
 
-  if (!user) {
-    card.classList.add('d-none');
-    return;
-  }
-
-  card.classList.remove('d-none');
-  const name = `${user.first_name} ${user.last_name}`;
-  const initials = getInitials(name);
-
-  document.getElementById('modal-reporter-avatar').textContent = initials;
-  document.getElementById('modal-reporter-name').textContent = name;
-  document.getElementById('modal-reporter-email').textContent = user.email || 'Brak emaila';
-  
-  const deptEl = document.getElementById('modal-reporter-dept');
-  if (deptEl) {
-    deptEl.textContent = user.department ? `${user.department} ${user.office_room ? '• pok. ' + user.office_room : ''}` : (user.role_name || 'Użytkownik');
-  }
+  const name = fullName(user);
+  setTextById('modal-reporter-avatar', getInitials(name));
+  setTextById('modal-reporter-name', name);
+  setTextById('modal-reporter-email', user.email || 'Brak emaila');
+  setTextById('modal-reporter-dept', user.department
+    ? `${user.department}${user.office_room ? ` • pok. ${user.office_room}` : ''}`
+    : (user.role_name || 'Użytkownik'));
 }
 
 /**
@@ -261,23 +110,9 @@ function updateModalReporterPreview() {
  */
 async function submitTicketCreateModal(event) {
   if (event) event.preventDefault();
-
-  const titleEl   = document.getElementById('modal-ticket-title');
-  const descEl    = document.getElementById('modal-ticket-description');
-  const catEl     = document.getElementById('modal-ticket-category');
-  const priEl     = document.getElementById('modal-ticket-priority');
-  const repEl     = document.getElementById('modal-ticket-reporter');
-  const submitBtn = document.getElementById('modal-ticket-submit-btn');
-
-  const title       = titleEl?.value.trim();
-  const description = descEl?.value.trim();
-  const category_id = catEl?.value;
-  const priority_id = priEl?.value;
-  const reporter_id = repEl?.value;
-
   _clearModalAlert();
 
-  // Walidacja kroku 1
+  // Krok 1: zgłaszający, temat, opis
   if (!_validateTicketStep1()) return;
 
   // Bez weryfikacji AI nie można utworzyć zgłoszenia (np. Enter w polu tematu) – uruchom weryfikację
@@ -286,71 +121,51 @@ async function submitTicketCreateModal(event) {
     return;
   }
 
-  // Walidacja kroku 2
-  if (!category_id) {
+  // Krok 2: kategoria i priorytet
+  const catEl = document.getElementById('modal-ticket-category');
+  const priEl = document.getElementById('modal-ticket-priority');
+  if (!catEl.value) {
     _showModalAlert('danger', 'Proszę wybrać kategorię problemu.');
-    catEl?.focus();
+    catEl.focus();
     return;
   }
-  if (!priority_id) {
+  if (!priEl.value) {
     _showModalAlert('danger', 'Proszę wybrać priorytet zgłoszenia.');
-    priEl?.focus();
+    priEl.focus();
     return;
   }
 
-  // Blokada przycisku
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `
-      <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-      <span>Tworzenie…</span>
-    `;
-  }
+  const restoreButton = setButtonBusy(document.getElementById('modal-ticket-submit-btn'), 'Tworzenie…');
 
   try {
-    const payload = {
-      title,
-      description,
-      category_id: parseInt(category_id, 10),
-      priority_id: parseInt(priority_id, 10),
-      reporter_id: parseInt(reporter_id, 10),
-    };
+    const { ticket } = await API.createTicket({
+      title:       document.getElementById('modal-ticket-title').value.trim(),
+      description: document.getElementById('modal-ticket-description').value.trim(),
+      category_id: parseInt(catEl.value, 10),
+      priority_id: parseInt(priEl.value, 10),
+      reporter_id: parseInt(document.getElementById('modal-ticket-reporter').value, 10),
+    });
 
-    const res = await API.createTicket(payload);
-
-    // Zamknij modal
+    restoreButton();
     closeTicketCreateModal();
-
-    // Wyczyść pola
     _resetModalFields();
-
-    // Przejdź do nowo utworzonego zgłoszenia lub odśwież widok
-    if (res && res.ticket && res.ticket.id) {
-      navigateTo(`/tickets/${res.ticket.id}`);
-    } else {
-      if (typeof loadTickets === 'function') loadTickets();
-      if (typeof loadRecentTickets === 'function') loadRecentTickets();
-    }
-
+    navigateTo(`/tickets/${ticket.id}`);
   } catch (err) {
     _showModalAlert('danger', err.message || 'Wystąpił błąd podczas tworzenia zgłoszenia.');
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="ti ti-check fs-2 me-1"></i><span>Utwórz zgłoszenie</span>';
-    }
+    restoreButton();
   }
 }
 
 /* ---------------------------------------------------------------------
    Weryfikacja AI (krok 2) – obowiązkowa przed utworzeniem zgłoszenia.
-   Po weryfikacji pojawia się sekcja z kategorią i priorytetem do ewentualnej
-   poprawy. Zmiana tematu lub opisu po weryfikacji wymaga ponownej weryfikacji.
+   Wynik pojawia się w prawym panelu modalu: kategoria i priorytet do ewentualnej
+   poprawy. Zmiana tematu lub opisu po weryfikacji oznacza wynik jako nieaktualny
+   i wymaga ponownej weryfikacji.
    --------------------------------------------------------------------- */
 
 // Stan weryfikacji: dla jakiej treści została wykonana
-const _ticketReview = { done: false, title: '', description: '' };
-
-const VERIFY_BTN_HTML = '<i class="ti ti-sparkles fs-2"></i><span>Weryfikuj z AI</span>';
+// done – można utworzyć zgłoszenie; hasResult – panel ma wynik (aktualny lub nie); pending – trwa zapytanie
+const _ticketReview = { done: false, hasResult: false, pending: false, title: '', description: '' };
 
 function _validateTicketStep1() {
   const repEl   = document.getElementById('modal-ticket-reporter');
@@ -384,24 +199,23 @@ async function verifyTicketWithAi() {
 
   const title       = document.getElementById('modal-ticket-title').value.trim();
   const description = document.getElementById('modal-ticket-description').value.trim();
-  const verifyBtn   = document.getElementById('modal-ticket-verify-btn');
 
-  if (verifyBtn) {
-    verifyBtn.disabled = true;
-    verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Weryfikuję…</span>';
-  }
+  _ticketReview.done = false;
+  _ticketReview.pending = true;
+  _setAiPanelState('loading');
 
   try {
     const { suggestion } = await API.triageTicket({ title, description });
 
     // Użytkownik mógł zmienić treść w trakcie oczekiwania – wynik byłby nieaktualny
-    if (_currentTicketContentDiffers(title, description)) return;
+    if (_currentTicketContentDiffers(title, description)) return _abortStaleVerification();
 
     const catEl = document.getElementById('modal-ticket-category');
     const priEl = document.getElementById('modal-ticket-priority');
     if (catEl) catEl.value = String(suggestion.category_id);
     if (priEl) priEl.value = String(suggestion.priority_id);
     updateModalPriorityPreview();
+    _renderSelfHelpSteps(suggestion.self_help_steps);
 
     const confidenceLabel = { low: 'niska', medium: 'średnia', high: 'wysoka' }[suggestion.confidence] || suggestion.confidence;
     _showReviewStep({ title, description }, 'info', `
@@ -413,11 +227,12 @@ async function verifyTicketWithAi() {
       <div class="small text-muted mt-1">Sprawdź propozycję – w razie potrzeby popraw kategorię lub priorytet i utwórz zgłoszenie.</div>
     `);
   } catch (err) {
-    if (_currentTicketContentDiffers(title, description)) return;
+    if (_currentTicketContentDiffers(title, description)) return _abortStaleVerification();
 
     // AI niedostępne – nie blokujemy zgłoszeń, użytkownik wybiera kategorię i priorytet ręcznie
     const catEl = document.getElementById('modal-ticket-category');
     if (catEl) catEl.value = '';
+    _renderSelfHelpSteps([]);
     _showReviewStep({ title, description }, 'warning', `
       <div class="fw-semibold mb-1">Weryfikacja AI nie powiodła się</div>
       <div class="small">${escapeHtml(err.message || 'Nieznany błąd')}</div>
@@ -426,12 +241,20 @@ async function verifyTicketWithAi() {
         <a href="#" onclick="event.preventDefault(); verifyTicketWithAi();">spróbuj ponownie</a>.
       </div>
     `);
-  } finally {
-    if (verifyBtn) {
-      verifyBtn.disabled = false;
-      verifyBtn.innerHTML = VERIFY_BTN_HTML;
-    }
   }
+}
+
+/**
+ * Lista prostych czynności do samodzielnego wykonania – sekcja ukryta, gdy AI nic nie zaproponowało
+ */
+function _renderSelfHelpSteps(steps) {
+  const section = document.getElementById('modal-ai-selfhelp');
+  const list = document.getElementById('modal-ai-selfhelp-list');
+  if (!section || !list) return;
+
+  const items = Array.isArray(steps) ? steps.filter(s => typeof s === 'string' && s.trim()) : [];
+  list.innerHTML = items.map(s => `<li class="mb-1">${escapeHtml(s)}</li>`).join('');
+  section.classList.toggle('d-none', items.length === 0);
 }
 
 function _currentTicketContentDiffers(title, description) {
@@ -439,8 +262,41 @@ function _currentTicketContentDiffers(title, description) {
          document.getElementById('modal-ticket-description')?.value.trim() !== description;
 }
 
+/**
+ * Przełącza stan prawego panelu weryfikacji AI:
+ *  - empty   – brak weryfikacji, zachęta + przycisk „Weryfikuj z AI”
+ *  - loading – trwa zapytanie do AI
+ *  - review  – wynik AI + kategoria i priorytet do ewentualnej poprawy
+ *  - stale   – wynik AI widoczny, ale treść zgłoszenia zmieniła się od weryfikacji
+ */
+function _setAiPanelState(state) {
+  const toggle = (id, show, flex = false) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('d-none', !show);
+    if (flex) el.classList.toggle('d-flex', show);
+  };
+
+  toggle('modal-ai-empty',   state === 'empty',   true);
+  toggle('modal-ai-loading', state === 'loading', true);
+  toggle('modal-ai-stale',   state === 'stale',   true);
+  toggle('modal-ticket-review', state === 'review' || state === 'stale');
+
+  // Nieaktualny wynik jest wyszarzony i nieedytowalny do czasu ponownej weryfikacji
+  const reviewEl = document.getElementById('modal-ticket-review');
+  if (reviewEl) {
+    reviewEl.classList.toggle('opacity-50', state === 'stale');
+    reviewEl.querySelectorAll('select').forEach(el => { el.disabled = state === 'stale'; });
+  }
+
+  const submitBtn = document.getElementById('modal-ticket-submit-btn');
+  if (submitBtn) submitBtn.disabled = state !== 'review';
+}
+
 function _showReviewStep({ title, description }, alertType, resultHtml) {
   _ticketReview.done = true;
+  _ticketReview.pending = false;
+  _ticketReview.hasResult = true;
   _ticketReview.title = title;
   _ticketReview.description = description;
 
@@ -449,33 +305,39 @@ function _showReviewStep({ title, description }, alertType, resultHtml) {
     resultEl.className = `alert alert-${alertType} mb-3`;
     resultEl.innerHTML = resultHtml;
   }
-  document.getElementById('modal-ticket-review')?.classList.remove('d-none');
-  document.getElementById('modal-ticket-verify-btn')?.classList.add('d-none');
-  document.getElementById('modal-ticket-submit-btn')?.classList.remove('d-none');
+  _setAiPanelState('review');
 }
 
 /**
- * Powrót do kroku 1 – ukrywa sekcję weryfikacji i przycisk tworzenia zgłoszenia
+ * Treść zmieniła się w trakcie weryfikacji – odrzuć wynik i wróć do poprzedniego stanu panelu
+ */
+function _abortStaleVerification() {
+  _ticketReview.pending = false;
+  _setAiPanelState(_ticketReview.hasResult ? 'stale' : 'empty');
+}
+
+/**
+ * Pełny reset weryfikacji – panel wraca do stanu początkowego
  */
 function _hideReviewStep() {
   _ticketReview.done = false;
+  _ticketReview.pending = false;
+  _ticketReview.hasResult = false;
   _ticketReview.title = '';
   _ticketReview.description = '';
-
-  document.getElementById('modal-ticket-review')?.classList.add('d-none');
-  document.getElementById('modal-ticket-submit-btn')?.classList.add('d-none');
-  document.getElementById('modal-ticket-verify-btn')?.classList.remove('d-none');
+  _renderSelfHelpSteps([]);
+  _setAiPanelState('empty');
 }
 
 /**
- * Wywoływane przy edycji tematu lub opisu – zmiana treści unieważnia weryfikację
+ * Wywoływane przy edycji tematu lub opisu – zmiana treści unieważnia weryfikację.
+ * Powrót do zweryfikowanej treści przywraca wynik bez ponownego zapytania.
  */
 function onTicketContentChanged() {
-  if (!_ticketReview.done) return;
-  if (_currentTicketContentDiffers(_ticketReview.title, _ticketReview.description)) {
-    _hideReviewStep();
-    _showModalAlert('info', 'Treść zgłoszenia została zmieniona – zweryfikuj ją ponownie z AI.');
-  }
+  if (!_ticketReview.hasResult || _ticketReview.pending) return;
+  const differs = _currentTicketContentDiffers(_ticketReview.title, _ticketReview.description);
+  _ticketReview.done = !differs;
+  _setAiPanelState(differs ? 'stale' : 'review');
 }
 
 function _resetModalFields() {

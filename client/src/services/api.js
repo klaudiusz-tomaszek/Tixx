@@ -20,13 +20,56 @@ async function apiRequest(url, { method = 'GET', body } = {}) {
   const res = await fetch(url, options);
   const data = await res.json().catch(() => ({}));
 
+  // Brak lub wygaśnięcie sesji – przejście na stronę logowania z powrotem do bieżącego adresu
+  if (res.status === 401 && !url.startsWith('/api/auth/login') && window.location.pathname !== '/login') {
+    redirectToLogin();
+    return new Promise(() => {}); // strona i tak się przeładowuje – nie pokazujemy błędu
+  }
+
   if (!res.ok) {
     throw new Error(data.error || `Błąd serwera (HTTP ${res.status})`);
   }
   return data;
 }
 
+/**
+ * Słowniki (kategorie, priorytety, statusy, użytkownicy) zmieniają się rzadko –
+ * pobieramy każdy raz na załadowanie strony i współdzielimy między widokami.
+ * Nieudane pobranie nie jest zapamiętywane, więc kolejne wywołanie spróbuje ponownie.
+ */
+const _dictionaryCache = {};
+
+function getDictionary(name) {
+  if (!_dictionaryCache[name]) {
+    _dictionaryCache[name] = apiRequest(`/api/dictionaries/${name}`).catch(err => {
+      delete _dictionaryCache[name];
+      throw err;
+    });
+  }
+  return _dictionaryCache[name];
+}
+
+function redirectToLogin() {
+  const next = window.location.pathname + window.location.search;
+  window.location.replace(next && next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
+}
+
 const API = {
+
+  /** POST /api/auth/login */
+  login({ email, password, remember }) {
+    return apiRequest('/api/auth/login', { method: 'POST', body: { email, password, remember } });
+  },
+
+  /** POST /api/auth/logout */
+  logout() {
+    return apiRequest('/api/auth/logout', { method: 'POST' });
+  },
+
+  /** GET /api/auth/me – zalogowany użytkownik */
+  getCurrentUser() {
+    return apiRequest('/api/auth/me');
+  },
 
   /** GET /api/tickets?status=&priority=&limit= */
   getTickets({ status = '', priority = '', limit = 50 } = {}) {
@@ -76,24 +119,24 @@ const API = {
     return apiRequest(`/api/tickets/${ticketId}/priority`, { method: 'PATCH', body: { priority_id } });
   },
 
-  /** GET /api/dictionaries/categories */
+  /** GET /api/dictionaries/categories (zapamiętywane) */
   getCategories() {
-    return apiRequest('/api/dictionaries/categories');
+    return getDictionary('categories');
   },
 
-  /** GET /api/dictionaries/priorities */
+  /** GET /api/dictionaries/priorities (zapamiętywane) */
   getPriorities() {
-    return apiRequest('/api/dictionaries/priorities');
+    return getDictionary('priorities');
   },
 
-  /** GET /api/dictionaries/statuses */
+  /** GET /api/dictionaries/statuses (zapamiętywane) */
   getStatuses() {
-    return apiRequest('/api/dictionaries/statuses');
+    return getDictionary('statuses');
   },
 
-  /** GET /api/dictionaries/users */
+  /** GET /api/dictionaries/users (zapamiętywane) */
   getUsers() {
-    return apiRequest('/api/dictionaries/users');
+    return getDictionary('users');
   },
 
   /** GET /api/health */

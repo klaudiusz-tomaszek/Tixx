@@ -128,7 +128,39 @@ document.addEventListener('click', (e) => {
 // ── Obsługa przycisków Wstecz / Dalej w przeglądarce ──────────────────
 window.addEventListener('popstate', handleRoute);
 
-// ── Inicjalizacja routingu po załadowaniu drzewa DOM ───────────────────
-document.addEventListener('DOMContentLoaded', () => {
+// ── Zalogowany użytkownik ─────────────────────────────────────────────
+let currentUser = null;
+
+function _renderCurrentUser(user) {
+  const name = fullName(user);
+  const values = {
+    initials: getInitials(name),
+    name,
+    email: user.email || '',
+    role: user.role_name || '',
+  };
+  document.querySelectorAll('[data-current-user]').forEach(el => {
+    el.textContent = values[el.getAttribute('data-current-user')] ?? '';
+  });
+}
+
+async function logout() {
+  try {
+    await API.logout();
+  } catch (_) {
+    /* nawet przy błędzie serwera przechodzimy na stronę logowania */
+  }
+  window.location.replace('/login');
+}
+
+// ── Inicjalizacja po załadowaniu drzewa DOM: najpierw sesja, potem routing ──
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { user } = await API.getCurrentUser(); // przy braku sesji api.js przekierowuje na /login
+    currentUser = user;
+    _renderCurrentUser(user);
+  } catch (err) {
+    console.error('Nie udało się pobrać zalogowanego użytkownika:', err);
+  }
   handleRoute();
 });

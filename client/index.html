@@ -43,11 +43,21 @@
 
         <!-- Awatar mobilny -->
         <div class="navbar-nav flex-row d-lg-none">
-          <a href="#" class="nav-link p-0">
-            <span class="avatar avatar-sm"
-                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
-            </span>
-          </a>
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link p-0" data-bs-toggle="dropdown" aria-label="Menu użytkownika">
+              <span class="avatar avatar-sm bg-primary-lt text-primary fw-bold" data-current-user="initials"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end">
+              <div class="dropdown-header">
+                <div class="fw-semibold text-body" data-current-user="name"></div>
+                <div class="text-muted small" data-current-user="email"></div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();">
+                <i class="ti ti-logout me-2"></i>Wyloguj się
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Menu nawigacyjne -->
@@ -133,14 +143,25 @@
             </div>
           </div>
 
-          <!-- Profil użytkownika -->
-          <div class="d-flex align-items-center gap-2">
-            <span class="avatar avatar-sm"
-                  style="background-image:url(https://ui-avatars.com/api/?name=Admin+Tixx&background=206bc4&color=fff)">
-            </span>
-            <div class="d-none d-xl-block">
-              <div class="fw-semibold text-truncate" style="font-size:.8125rem;line-height:1.2;">Admin Tixx</div>
-              <div class="text-muted text-truncate" style="font-size:.7rem;">admin@tixx.local</div>
+          <!-- Profil zalogowanego użytkownika (uzupełniany przez App.js) -->
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link d-flex align-items-center gap-2 p-0" data-bs-toggle="dropdown" aria-label="Menu użytkownika">
+              <span class="avatar avatar-sm bg-primary-lt text-primary fw-bold" data-current-user="initials"></span>
+              <div class="d-none d-xl-block text-start">
+                <div class="fw-semibold text-truncate" style="font-size:.8125rem;line-height:1.2;" data-current-user="name">…</div>
+                <div class="text-muted text-truncate" style="font-size:.7rem;" data-current-user="email"></div>
+              </div>
+              <i class="ti ti-chevron-down text-muted d-none d-xl-inline"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <div class="dropdown-header">
+                <div class="fw-semibold text-body" data-current-user="name"></div>
+                <div class="text-muted small" data-current-user="role"></div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();">
+                <i class="ti ti-logout me-2"></i>Wyloguj się
+              </a>
             </div>
           </div>
         </div>
@@ -759,8 +780,8 @@
   <!-- ═══════════════════════════════════════════════════════════════
        MODAL: TWORZENIE ZGŁOSZENIA (NAKŁADKA OVERLAY NAD WIDOKIEM)
   ════════════════════════════════════════════════════════════════════ -->
-  <div class="modal modal-blur fade" id="modal-ticket-create" tabindex="-1" role="dialog" aria-hidden="true" onclick="if(event.target===this) closeTicketCreateModal();">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal modal-blur fade" id="modal-ticket-create" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-0">
         <form id="form-ticket-create-modal" onsubmit="event.preventDefault(); submitTicketCreateModal(event);">
           <div class="modal-header">
@@ -770,97 +791,139 @@
               </span>
               <span class="fw-bold">Nowe zgłoszenie serwisowe</span>
             </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij" onclick="closeTicketCreateModal()"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
           </div>
 
           <div class="modal-body py-3">
             <!-- Alert błędu / sukcesu -->
             <div id="modal-create-ticket-alert" class="alert d-none" role="alert"></div>
 
-            <!-- KROK 1: dane od zgłaszającego -->
-            <div class="row g-3">
-              <!-- Zgłaszający -->
-              <div class="col-12">
-                <label class="form-label required" for="modal-ticket-reporter">Osoba zgłaszająca</label>
-                <select class="form-select" id="modal-ticket-reporter" onchange="updateModalReporterPreview()" required>
-                  <option value="">Ładowanie użytkowników…</option>
-                </select>
+            <div class="row g-4">
+              <!-- KROK 1 (lewa kolumna): dane od zgłaszającego -->
+              <div class="col-lg-7">
+                <div class="row g-3">
+                  <!-- Zgłaszający -->
+                  <div class="col-12">
+                    <label class="form-label required" for="modal-ticket-reporter">Osoba zgłaszająca</label>
+                    <select class="form-select" id="modal-ticket-reporter" onchange="updateModalReporterPreview()" required>
+                      <option value="">Ładowanie użytkowników…</option>
+                    </select>
 
-                <!-- Dyskretny podgląd wybranego zgłaszającego -->
-                <div id="modal-reporter-card" class="p-2 mt-2 border rounded bg-body-tertiary d-none">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="avatar avatar-xs rounded-circle bg-primary-lt text-primary fw-bold" id="modal-reporter-avatar">U</span>
-                    <div class="small overflow-hidden">
-                      <span class="fw-semibold text-body" id="modal-reporter-name">–</span>
-                      <span class="text-muted mx-1">&bull;</span>
-                      <span class="text-muted" id="modal-reporter-email">–</span>
-                      <span class="text-muted mx-1">&bull;</span>
-                      <span class="badge bg-secondary-lt" id="modal-reporter-dept">–</span>
+                    <!-- Dyskretny podgląd wybranego zgłaszającego -->
+                    <div id="modal-reporter-card" class="p-2 mt-2 border rounded bg-body-tertiary d-none">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="avatar avatar-xs rounded-circle bg-primary-lt text-primary fw-bold" id="modal-reporter-avatar">U</span>
+                        <div class="small overflow-hidden">
+                          <span class="fw-semibold text-body" id="modal-reporter-name">–</span>
+                          <span class="text-muted mx-1">&bull;</span>
+                          <span class="text-muted" id="modal-reporter-email">–</span>
+                          <span class="text-muted mx-1">&bull;</span>
+                          <span class="badge bg-secondary-lt" id="modal-reporter-dept">–</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <!-- Temat zgłoszenia -->
-              <div class="col-12">
-                <label class="form-label required" for="modal-ticket-title">Temat zgłoszenia</label>
-                <input type="text" class="form-control" id="modal-ticket-title"
-                       placeholder="Krótki, zrozumiały temat (np. Brak dostępu do drukarki sieciowej HP na 2. piętrze)"
-                       required minlength="3" maxlength="255" oninput="onTicketContentChanged()">
-                <small class="form-hint">Zwięzłe podsumowanie problemu technicznego.</small>
-              </div>
-
-              <!-- Opis problemu -->
-              <div class="col-12">
-                <label class="form-label required" for="modal-ticket-description">Szczegółowy opis problemu</label>
-                <textarea class="form-control" id="modal-ticket-description" rows="5"
-                          placeholder="Opisz dokładnie występujący problem, kroki do jego odtworzenia lub treść ewentualnych komunikatów o błędach…"
-                          required minlength="5" oninput="onTicketContentChanged()"></textarea>
-                <small class="form-hint">Dokładne informacje pozwolą zespołowi IT szybciej rozwiązać incydent.</small>
-              </div>
-            </div>
-
-            <!-- KROK 2: wynik weryfikacji AI – kategoria i priorytet do ewentualnej poprawy -->
-            <div id="modal-ticket-review" class="d-none">
-              <hr class="my-3">
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="bg-primary-lt avatar avatar-xs rounded"><i class="ti ti-sparkles text-primary"></i></span>
-                <span class="fw-bold">Weryfikacja AI</span>
-              </div>
-              <div id="modal-ticket-ai-result" class="alert alert-info mb-3" role="status"></div>
-
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label required" for="modal-ticket-category">Kategoria</label>
-                  <select class="form-select" id="modal-ticket-category">
-                    <option value="">Ładowanie kategorii…</option>
-                  </select>
-                </div>
-
-                <div class="col-md-6">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label required mb-0" for="modal-ticket-priority">Priorytet</label>
-                    <span id="modal-priority-preview-badge"><span class="badge bg-secondary-lt">–</span></span>
+                  <!-- Temat zgłoszenia -->
+                  <div class="col-12">
+                    <label class="form-label required" for="modal-ticket-title">Temat zgłoszenia</label>
+                    <input type="text" class="form-control" id="modal-ticket-title"
+                           placeholder="Krótki, zrozumiały temat (np. Brak dostępu do drukarki sieciowej HP na 2. piętrze)"
+                           required minlength="3" maxlength="255" oninput="onTicketContentChanged()">
+                    <small class="form-hint">Zwięzłe podsumowanie problemu technicznego.</small>
                   </div>
-                  <select class="form-select" id="modal-ticket-priority" onchange="updateModalPriorityPreview()">
-                    <option value="">Ładowanie priorytetów…</option>
-                  </select>
-                  <div class="text-muted small mt-1" id="modal-priority-preview-desc" style="font-size:.75rem;"></div>
+
+                  <!-- Opis problemu -->
+                  <div class="col-12">
+                    <label class="form-label required" for="modal-ticket-description">Szczegółowy opis problemu</label>
+                    <textarea class="form-control" id="modal-ticket-description" rows="8"
+                              placeholder="Opisz dokładnie występujący problem, kroki do jego odtworzenia lub treść ewentualnych komunikatów o błędach…"
+                              required minlength="5" oninput="onTicketContentChanged()"></textarea>
+                    <small class="form-hint">Dokładne informacje pozwolą zespołowi IT szybciej rozwiązać incydent.</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KROK 2 (prawa kolumna): panel weryfikacji AI – stany: empty / loading / review / stale -->
+              <div class="col-lg-5">
+                <div id="modal-ai-panel" class="h-100 d-flex flex-column border rounded bg-body-tertiary p-3">
+                  <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="bg-primary-lt avatar avatar-xs rounded"><i class="ti ti-sparkles text-primary"></i></span>
+                    <span class="fw-bold">Weryfikacja AI</span>
+                  </div>
+
+                  <!-- Stan: brak weryfikacji -->
+                  <div id="modal-ai-empty" class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center py-4">
+                    <span class="avatar avatar-lg rounded-circle bg-primary-lt mb-3"><i class="ti ti-sparkles fs-1 text-primary"></i></span>
+                    <div class="fw-semibold mb-1">Klasyfikacja zgłoszenia</div>
+                    <div class="text-muted small mb-3" style="max-width: 18rem;">
+                      Uzupełnij temat i opis – AI zaproponuje kategorię i priorytet, które możesz potem poprawić.
+                    </div>
+                    <button type="button" id="modal-ticket-verify-btn" class="btn btn-primary d-inline-flex align-items-center gap-1"
+                            onclick="verifyTicketWithAi()">
+                      <i class="ti ti-sparkles fs-2"></i>
+                      <span>Weryfikuj z AI</span>
+                    </button>
+                  </div>
+
+                  <!-- Stan: trwa weryfikacja -->
+                  <div id="modal-ai-loading" class="flex-grow-1 flex-column align-items-center justify-content-center text-center py-4 d-none">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <div class="fw-semibold mb-1">AI analizuje zgłoszenie…</div>
+                    <div class="text-muted small">To zwykle trwa kilka sekund.</div>
+                  </div>
+
+                  <!-- Stan: treść zmieniona po weryfikacji -->
+                  <div id="modal-ai-stale" class="alert alert-warning align-items-start gap-2 mb-3 d-none" role="status">
+                    <i class="ti ti-refresh fs-3"></i>
+                    <div class="flex-grow-1">
+                      <div class="fw-semibold">Treść zgłoszenia została zmieniona</div>
+                      <div class="small mb-2">Propozycja poniżej może być nieaktualna.</div>
+                      <button type="button" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1" onclick="verifyTicketWithAi()">
+                        <i class="ti ti-sparkles"></i><span>Zweryfikuj ponownie</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Stan: wynik weryfikacji – kategoria i priorytet do ewentualnej poprawy -->
+                  <div id="modal-ticket-review" class="d-none">
+                    <div id="modal-ticket-ai-result" class="alert alert-info mb-3" role="status"></div>
+
+                    <div class="mb-3">
+                      <label class="form-label required" for="modal-ticket-category">Kategoria</label>
+                      <select class="form-select" id="modal-ticket-category">
+                        <option value="">Ładowanie kategorii…</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="form-label required" for="modal-ticket-priority">Priorytet</label>
+                      <select class="form-select" id="modal-ticket-priority" onchange="updateModalPriorityPreview()">
+                        <option value="">Ładowanie priorytetów…</option>
+                      </select>
+                      <div class="text-muted small mt-1" id="modal-priority-preview-desc" style="font-size:.75rem;"></div>
+                    </div>
+
+                    <!-- Proste czynności, które zgłaszający może wykonać sam, zanim IT podejmie zgłoszenie -->
+                    <div id="modal-ai-selfhelp" class="mt-3 pt-3 border-top d-none">
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="ti ti-bulb text-warning fs-3"></i>
+                        <span class="fw-semibold small">Zanim IT podejmie zgłoszenie</span>
+                      </div>
+                      <ol id="modal-ai-selfhelp-list" class="small ps-3 mb-1"></ol>
+                      <div class="text-muted" style="font-size:.75rem;">Jeśli któraś z czynności rozwiąże problem, zgłoszenie może nie być potrzebne.</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="modal-footer d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal" onclick="closeTicketCreateModal()">
+            <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">
               Anuluj
             </button>
-            <button type="button" id="modal-ticket-verify-btn" class="btn btn-primary d-inline-flex align-items-center gap-1"
-                    onclick="verifyTicketWithAi()">
-              <i class="ti ti-sparkles fs-2"></i>
-              <span>Weryfikuj z AI</span>
-            </button>
-            <button type="submit" id="modal-ticket-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1 d-none">
+            <button type="submit" id="modal-ticket-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1" disabled>
               <i class="ti ti-check fs-2"></i>
               <span>Utwórz zgłoszenie</span>
             </button>
@@ -873,7 +936,8 @@
   <!-- ═══════════════════════════════════════════════════════════════
        SKRYPTY – kolejność ładowania
   ════════════════════════════════════════════════════════════════════ -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Tabler zawiera już Bootstrap JS – osobny bootstrap.bundle powodował podwójną obsługę
+       data-bs-toggle (dropdowny otwierały się i od razu zamykały) -->
   <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
 
   <!-- 1. Helpery i komunikacja z API -->

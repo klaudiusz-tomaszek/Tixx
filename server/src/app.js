@@ -23,6 +23,11 @@ app.use('/api', (req, res) => {
   });
 });
 
+// Strona logowania (osobny dokument, bez układu panelu)
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(clientDir, 'login.html'));
+});
+
 // Trasy aplikacji frontendowej SPA (HTML5 History API) + fallback dla pozostałych tras
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDir, 'index.html'));
@@ -51,8 +56,8 @@ app.use((err, req, res, next) => {
 
   const status = err.status || err.statusCode || 500;
 
-  // Błędy 4xx oznaczone jako bezpieczne do pokazania (np. niepoprawny JSON w body)
-  if (status < 500 && err.expose) {
+  // Błędy oznaczone jako bezpieczne do pokazania (np. błędy 4xx z express.json, błędy usługi AI)
+  if (err.expose) {
     return res.status(status).json({ error: err.message });
   }
 
