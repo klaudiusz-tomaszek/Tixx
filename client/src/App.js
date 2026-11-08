@@ -132,7 +132,7 @@ window.addEventListener('popstate', handleRoute);
 let currentUser = null;
 
 function _renderCurrentUser(user) {
-  const name = `${user.first_name} ${user.last_name}`.trim();
+  const name = fullName(user);
   const values = {
     initials: getInitials(name),
     name,

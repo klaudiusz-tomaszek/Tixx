@@ -1,4 +1,5 @@
 const { getSessionUser } = require('../services/auth.service');
+const { asyncHandler } = require('./async-handler');
 
 const SESSION_COOKIE = 'tixx_session';
 
@@ -34,17 +35,13 @@ function cookieOptions(req) {
 /**
  * Wymaga zalogowanego użytkownika – ustawia req.user albo zwraca 401
  */
-async function requireAuth(req, res, next) {
-  try {
-    const user = await getSessionUser(readCookie(req, SESSION_COOKIE));
-    if (!user) {
-      return res.status(401).json({ error: 'Sesja wygasła lub nie jesteś zalogowany' });
-    }
-    req.user = user;
-    next();
-  } catch (err) {
-    next(err);
+const requireAuth = asyncHandler(async (req, res, next) => {
+  const user = await getSessionUser(readCookie(req, SESSION_COOKIE));
+  if (!user) {
+    return res.status(401).json({ error: 'Sesja wygasła lub nie jesteś zalogowany' });
   }
-}
+  req.user = user;
+  next();
+});
 
 module.exports = { SESSION_COOKIE, readCookie, cookieOptions, requireAuth };

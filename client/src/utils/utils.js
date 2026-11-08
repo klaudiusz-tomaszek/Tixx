@@ -23,16 +23,17 @@ const STATUS_BADGE = {
 };
 
 // ── Generatory badge'y ────────────────────────────────────────────────
-function priorityBadge(code, name) {
-  const key = (code || '').toString().toLowerCase();
-  const cls = PRIORITY_BADGE[key] || 'bg-secondary-lt';
+function _badge(colorMap, code, name) {
+  const cls = colorMap[String(code || '').toLowerCase()] || 'bg-secondary-lt';
   return `<span class="badge ${cls}">${escapeHtml(name || code)}</span>`;
 }
 
+function priorityBadge(code, name) {
+  return _badge(PRIORITY_BADGE, code, name);
+}
+
 function statusBadge(code, name) {
-  const key = (code || '').toString().toLowerCase();
-  const cls = STATUS_BADGE[key] || 'bg-secondary-lt';
-  return `<span class="badge ${cls}">${escapeHtml(name || code)}</span>`;
+  return _badge(STATUS_BADGE, code, name);
 }
 
 // ── Bezpieczne formatowanie tekstu (Escape HTML) ──────────────────────
@@ -47,7 +48,11 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-// ── Inicjały dla awatarów ─────────────────────────────────────────────
+// ── Użytkownicy ───────────────────────────────────────────────────────
+function fullName(user) {
+  return `${user.first_name || ''} ${user.last_name || ''}`.trim();
+}
+
 function getInitials(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
@@ -66,10 +71,9 @@ function fmtDate(iso) {
          d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 }
 
-// ── Przełącznik motywu dark / light (domyślnie jasny / biały) ──────
+// ── Przełącznik motywu dark / light (domyślnie jasny) ─────────────────
 function setTheme(theme) {
-  const html = document.documentElement;
-  html.setAttribute('data-bs-theme', theme);
+  document.documentElement.setAttribute('data-bs-theme', theme);
   try {
     localStorage.setItem('tixx-theme', theme);
   } catch (e) {
@@ -87,30 +91,77 @@ function initTheme() {
   try {
     theme = localStorage.getItem('tixx-theme') || 'light';
   } catch (e) {
-    theme = 'light';
+    /* ignore storage errors */
   }
   setTheme(theme);
 }
 
-// ── Wspólne helpery do generowania wierszy tabel ──────────────────────
+// ── Wiersze tabel: ładowanie / brak danych / błąd ─────────────────────
+function _tableMessageRow(cols, html, textClass = 'text-muted') {
+  return `<tr><td colspan="${cols}" class="text-center ${textClass} py-4">${html}</td></tr>`;
+}
+
 function tableLoadingRow(cols) {
-  return `<tr><td colspan="${cols}" class="text-center text-muted py-4">
-    <span class="spinner-border spinner-border-sm me-2"></span>Ładowanie…</td></tr>`;
+  return _tableMessageRow(cols, '<span class="spinner-border spinner-border-sm me-2"></span>Ładowanie…');
 }
 
 function tableEmptyRow(cols, msg) {
-  return `<tr><td colspan="${cols}" class="text-center text-muted py-4">
-    <i class="ti ti-inbox me-2"></i>${escapeHtml(msg)}</td></tr>`;
+  return _tableMessageRow(cols, `<i class="ti ti-inbox me-2"></i>${escapeHtml(msg)}`);
 }
 
 function tableErrorRow(cols, msg) {
-  return `<tr><td colspan="${cols}" class="text-center text-danger py-4">
-    <i class="ti ti-alert-triangle me-2"></i>${escapeHtml(msg)}</td></tr>`;
+  return _tableMessageRow(cols, `<i class="ti ti-alert-triangle me-2"></i>${escapeHtml(msg)}`, 'text-danger');
 }
 
+// ── Drobne operacje na DOM ────────────────────────────────────────────
 function setTextById(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
+}
+
+/**
+ * Pokazuje lub ukrywa element (klasa d-none). Przyjmuje element albo jego id.
+ */
+function setVisible(elOrId, visible) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (el) el.classList.toggle('d-none', !visible);
+}
+
+/**
+ * Wypełnia <select> opcjami i zachowuje bieżący wybór, jeśli nadal istnieje.
+ * @param {HTMLSelectElement|string} selectOrId
+ * @param {Array} items
+ * @param {object} opts
+ *   placeholder – tekst pustej opcji na początku (pomijana, gdy brak)
+ *   value(item) – wartość opcji (domyślnie item.id)
+ *   label(item) – tekst opcji (domyślnie item.name)
+ *   attrs(item) – dodatkowe atrybuty HTML opcji (np. data-code="…")
+ */
+function fillSelect(selectOrId, items, { placeholder, value = i => i.id, label = i => i.name, attrs = () => '' } = {}) {
+  const select = typeof selectOrId === 'string' ? document.getElementById(selectOrId) : selectOrId;
+  if (!select || !Array.isArray(items)) return;
+
+  const current = select.value;
+  const placeholderHtml = placeholder !== undefined ? `<option value="">${escapeHtml(placeholder)}</option>` : '';
+  select.innerHTML = placeholderHtml + items.map(item =>
+    `<option value="${escapeHtml(value(item))}" ${attrs(item)}>${escapeHtml(label(item))}</option>`
+  ).join('');
+  select.value = current;
+}
+
+/**
+ * Blokuje przycisk i pokazuje spinner z tekstem. Zwraca funkcję przywracającą poprzedni wygląd.
+ *   const restore = setButtonBusy(btn, 'Zapisywanie…'); … restore();
+ */
+function setButtonBusy(button, busyText) {
+  if (!button) return () => {};
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span><span>${escapeHtml(busyText)}</span>`;
+  return () => {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  };
 }
 
 // Inicjalizacja motywu

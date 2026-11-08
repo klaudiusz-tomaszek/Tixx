@@ -4,8 +4,6 @@
    Zależności: utils.js, api.js
    ===================================================================== */
 
-const LOGIN_BTN_HTML = '<i class="ti ti-login-2 me-1"></i><span>Zaloguj się</span>';
-
 /**
  * Adres powrotu po zalogowaniu – tylko ścieżki w obrębie aplikacji (ochrona przed open redirect)
  */
@@ -25,7 +23,7 @@ function _showLoginError(message) {
 }
 
 function _clearLoginError() {
-  document.getElementById('login-alert')?.classList.add('d-none');
+  setVisible('login-alert', false);
 }
 
 async function submitLogin(event) {
@@ -51,8 +49,7 @@ async function submitLogin(event) {
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Logowanie…</span>';
+  const restoreButton = setButtonBusy(submitBtn, 'Logowanie…');
 
   try {
     await API.login({ email, password, remember: rememberEl.checked });
@@ -61,8 +58,7 @@ async function submitLogin(event) {
     _showLoginError(err.message || 'Nie udało się zalogować.');
     passwordEl.value = '';
     passwordEl.focus();
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = LOGIN_BTN_HTML;
+    restoreButton();
   }
 }
 

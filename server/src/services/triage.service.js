@@ -17,10 +17,12 @@ const BLOCKED_FINISH_REASONS = ['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED
 
 let client = null;
 
+// Błąd usługi AI z komunikatem bezpiecznym do pokazania użytkownikowi (expose → globalny handler błędów)
 class TriageError extends Error {
   constructor(message, status) {
     super(message);
     this.status = status;
+    this.expose = true;
   }
 }
 

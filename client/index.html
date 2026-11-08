@@ -780,7 +780,7 @@
   <!-- ═══════════════════════════════════════════════════════════════
        MODAL: TWORZENIE ZGŁOSZENIA (NAKŁADKA OVERLAY NAD WIDOKIEM)
   ════════════════════════════════════════════════════════════════════ -->
-  <div class="modal modal-blur fade" id="modal-ticket-create" tabindex="-1" role="dialog" aria-hidden="true" onclick="if(event.target===this) closeTicketCreateModal();">
+  <div class="modal modal-blur fade" id="modal-ticket-create" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-0">
         <form id="form-ticket-create-modal" onsubmit="event.preventDefault(); submitTicketCreateModal(event);">
@@ -791,7 +791,7 @@
               </span>
               <span class="fw-bold">Nowe zgłoszenie serwisowe</span>
             </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij" onclick="closeTicketCreateModal()"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
           </div>
 
           <div class="modal-body py-3">
@@ -920,7 +920,7 @@
           </div>
 
           <div class="modal-footer d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal" onclick="closeTicketCreateModal()">
+            <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">
               Anuluj
             </button>
             <button type="submit" id="modal-ticket-submit-btn" class="btn btn-primary d-inline-flex align-items-center gap-1" disabled>

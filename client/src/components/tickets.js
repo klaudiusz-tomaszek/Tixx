@@ -4,6 +4,9 @@
    Zależności: utils.js, api.js, ticket-detail.js
    ===================================================================== */
 
+// Domyślna liczba zgłoszeń na liście (musi istnieć jako opcja w #filter-limit)
+const DEFAULT_LIST_LIMIT = '50';
+
 // ── Załaduj i wyrenderuj tabelę zgłoszeń ─────────────────────────────
 async function loadTickets() {
   const tbody = document.getElementById('tickets-body');
@@ -15,20 +18,15 @@ async function loadTickets() {
 
   const status   = document.getElementById('filter-status')?.value || '';
   const priority = document.getElementById('filter-priority')?.value || '';
-  const limit    = document.getElementById('filter-limit')?.value || '50';
+  const limit    = document.getElementById('filter-limit')?.value || DEFAULT_LIST_LIMIT;
 
   try {
     const data = await API.getTickets({ status, priority, limit });
-    const countEl = document.getElementById('tickets-count');
-    if (countEl) countEl.textContent = data.count;
+    setTextById('tickets-count', data.count);
 
-    if (!data.tickets.length) {
-      tbody.innerHTML = tableEmptyRow(10, 'Brak zgłoszeń spełniających kryteria');
-      return;
-    }
-
-    tbody.innerHTML = data.tickets.map(_ticketRow).join('');
-
+    tbody.innerHTML = data.tickets.length
+      ? data.tickets.map(_ticketRow).join('')
+      : tableEmptyRow(10, 'Brak zgłoszeń spełniających kryteria');
   } catch (err) {
     tbody.innerHTML = tableErrorRow(10, err.message);
   }
@@ -36,12 +34,12 @@ async function loadTickets() {
 
 // ── Reset filtrów ─────────────────────────────────────────────────────
 function resetFilters() {
-  const statusEl = document.getElementById('filter-status');
-  const priEl    = document.getElementById('filter-priority');
-  const limEl    = document.getElementById('filter-limit');
-  if (statusEl) statusEl.value = '';
-  if (priEl) priEl.value = '';
-  if (limEl) limEl.value = '50';
+  ['filter-status', 'filter-priority'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const limitEl = document.getElementById('filter-limit');
+  if (limitEl) limitEl.value = DEFAULT_LIST_LIMIT;
   loadTickets();
 }
 
@@ -55,19 +53,11 @@ let _ticketFiltersLoaded = false;
 async function _ensureTicketFilters() {
   if (_ticketFiltersLoaded) return;
   const [statuses, priorities] = await Promise.all([API.getStatuses(), API.getPriorities()]);
-  _fillFilterSelect('filter-status', statuses);
+  const byCode = { placeholder: 'Wszystkie', value: i => i.code };
+  fillSelect('filter-status', statuses, byCode);
   // Priorytety od najważniejszego (słownik jest posortowany rosnąco: LOW → CRITICAL)
-  _fillFilterSelect('filter-priority', [...priorities].reverse());
+  fillSelect('filter-priority', [...priorities].reverse(), byCode);
   _ticketFiltersLoaded = true;
-}
-
-function _fillFilterSelect(id, items) {
-  const select = document.getElementById(id);
-  if (!select || !Array.isArray(items)) return;
-  const current = select.value;
-  select.innerHTML = '<option value="">Wszystkie</option>' +
-    items.map(i => `<option value="${escapeHtml(i.code)}">${escapeHtml(i.name)}</option>`).join('');
-  select.value = current;
 }
 
 function _ticketRow(t) {

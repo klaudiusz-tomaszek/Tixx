@@ -32,6 +32,23 @@ async function apiRequest(url, { method = 'GET', body } = {}) {
   return data;
 }
 
+/**
+ * Słowniki (kategorie, priorytety, statusy, użytkownicy) zmieniają się rzadko –
+ * pobieramy każdy raz na załadowanie strony i współdzielimy między widokami.
+ * Nieudane pobranie nie jest zapamiętywane, więc kolejne wywołanie spróbuje ponownie.
+ */
+const _dictionaryCache = {};
+
+function getDictionary(name) {
+  if (!_dictionaryCache[name]) {
+    _dictionaryCache[name] = apiRequest(`/api/dictionaries/${name}`).catch(err => {
+      delete _dictionaryCache[name];
+      throw err;
+    });
+  }
+  return _dictionaryCache[name];
+}
+
 function redirectToLogin() {
   const next = window.location.pathname + window.location.search;
   window.location.replace(next && next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
@@ -102,24 +119,24 @@ const API = {
     return apiRequest(`/api/tickets/${ticketId}/priority`, { method: 'PATCH', body: { priority_id } });
   },
 
-  /** GET /api/dictionaries/categories */
+  /** GET /api/dictionaries/categories (zapamiętywane) */
   getCategories() {
-    return apiRequest('/api/dictionaries/categories');
+    return getDictionary('categories');
   },
 
-  /** GET /api/dictionaries/priorities */
+  /** GET /api/dictionaries/priorities (zapamiętywane) */
   getPriorities() {
-    return apiRequest('/api/dictionaries/priorities');
+    return getDictionary('priorities');
   },
 
-  /** GET /api/dictionaries/statuses */
+  /** GET /api/dictionaries/statuses (zapamiętywane) */
   getStatuses() {
-    return apiRequest('/api/dictionaries/statuses');
+    return getDictionary('statuses');
   },
 
-  /** GET /api/dictionaries/users */
+  /** GET /api/dictionaries/users (zapamiętywane) */
   getUsers() {
-    return apiRequest('/api/dictionaries/users');
+    return getDictionary('users');
   },
 
   /** GET /api/health */
